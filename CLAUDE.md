@@ -41,9 +41,8 @@ Clé Google Maps restreinte à ce domaine uniquement.
 - Langue : français partout dans l'interface
 
 
-## Design system
-Lis impérativement DESIGN.md avant toute modification visuelle ou création d'élément UI.
-
-
-## Design system
-Lis impérativement DESIGN.md avant toute modification visuelle ou création d'élément UI.
+## Contexte Design
+- Lis impérativement PRODUCT.md (stratégie : registre, utilisateurs, principes) et DESIGN.md (système visuel : couleurs, typo, composants) avant toute modification visuelle ou création d'élément UI.
+- Registre : **product** — l'outil de comparaison (carte, filtres, comparateur, compte) est le cœur du produit.
+- Principes clés : la carte reste le cœur de l'expérience (jamais reléguée) ; rassurer avant de vendre sur les fiches ; comparer sans confusion ; aucune friction inutile entre comparaison et inscription ; premium sans être froid.
+- Point de dette identifié dans DESIGN.md : le verre dépoli (backdrop-filter blur) est aujourd'hui appliqué presque partout dans le code — à réserver aux surfaces vraiment flottantes (popups, overlay de connexion), pas à généraliser davantage.

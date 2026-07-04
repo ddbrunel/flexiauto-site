@@ -1,0 +1,128 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "design-system-color",
+        "value": "#1b4fd8",
+        "reason": "User explicitly provided this exact literal snippet (Code de la route button) to integrate verbatim",
+        "createdAt": "2026-07-03T12:17:41.304Z"
+      },
+      {
+        "rule": "design-system-radius",
+        "value": "10px",
+        "reason": "User-specified literal radius for savoir-plus.html CTA buttons",
+        "createdAt": "2026-07-03T12:17:41.333Z"
+      },
+      {
+        "rule": "overused-font",
+        "value": "inter",
+        "reason": "Already accepted project-wide for standalone pages",
+        "createdAt": "2026-07-03T13:28:20.516Z"
+      },
+      {
+        "rule": "design-system-font",
+        "value": "inter",
+        "reason": "User explicitly specified Inter for these standalone placeholder pages",
+        "createdAt": "2026-07-03T13:28:20.544Z"
+      },
+      {
+        "rule": "design-system-radius",
+        "value": "7px",
+        "reason": "Simple standalone placeholder page, consistent with accepted #1B4FD8 button language",
+        "createdAt": "2026-07-03T13:29:27.815Z"
+      },
+      {
+        "rule": "design-system-radius",
+        "value": "20px",
+        "reason": "Simple standalone placeholder page, consistent with accepted #1B4FD8 button language",
+        "createdAt": "2026-07-03T13:29:27.839Z"
+      },
+      {
+        "rule": "design-system-color",
+        "value": "#1640b0",
+        "reason": "Hover shade of the already-accepted #1B4FD8 button color",
+        "createdAt": "2026-07-03T13:29:27.862Z"
+      },
+      {
+        "rule": "design-system-radius",
+        "value": "12px",
+        "reason": "User-specified literal value for the topbanner CTA button",
+        "createdAt": "2026-07-04T08:01:27.568Z"
+      },
+      {
+        "rule": "design-system-color",
+        "value": "#374151",
+        "reason": "User-specified literal color for the En savoir plus nav button",
+        "createdAt": "2026-07-04T08:01:27.593Z"
+      },
+      {
+        "rule": "design-system-color",
+        "value": "#9ca3af",
+        "reason": "Muted chevron color on standalone pages that already use their own hardcoded palette, consistent with existing #0F172A/#64748B/#1B4FD8 on this file",
+        "createdAt": "2026-07-04T08:01:27.615Z"
+      },
+      {
+        "rule": "design-system-color",
+        "value": "#1e3a5f",
+        "reason": "User-specified literal color for savoir-plus.html's distinct dark hero + two-column marketing treatment",
+        "createdAt": "2026-07-04T08:04:46.422Z"
+      },
+      {
+        "rule": "design-system-color",
+        "value": "#e2e8f0",
+        "reason": "User-specified literal color for savoir-plus.html's distinct dark hero + two-column marketing treatment",
+        "createdAt": "2026-07-04T08:04:46.447Z"
+      },
+      {
+        "rule": "design-system-color",
+        "value": "#4ade80",
+        "reason": "User-specified literal color for savoir-plus.html's distinct dark hero + two-column marketing treatment",
+        "createdAt": "2026-07-04T08:04:46.471Z"
+      },
+      {
+        "rule": "design-system-color",
+        "value": "#60a5fa",
+        "reason": "User-specified literal color for savoir-plus.html's distinct dark hero + two-column marketing treatment",
+        "createdAt": "2026-07-04T08:04:46.495Z"
+      },
+      {
+        "rule": "design-system-color",
+        "value": "#94a3b8",
+        "reason": "User-specified literal color for savoir-plus.html's distinct dark hero + two-column marketing treatment",
+        "createdAt": "2026-07-04T08:04:46.518Z"
+      },
+      {
+        "rule": "design-system-color",
+        "value": "#f8faff",
+        "reason": "User-specified literal color for savoir-plus.html's distinct dark hero + two-column marketing treatment",
+        "createdAt": "2026-07-04T08:04:46.540Z"
+      },
+      {
+        "rule": "design-system-color",
+        "value": "#16a34a",
+        "reason": "User-specified literal color for savoir-plus.html's distinct dark hero + two-column marketing treatment",
+        "createdAt": "2026-07-04T08:04:46.562Z"
+      },
+      {
+        "rule": "design-system-color",
+        "value": "#0f172a",
+        "reason": "User-specified literal color for savoir-plus.html's distinct dark hero + two-column marketing treatment",
+        "createdAt": "2026-07-04T08:04:46.584Z"
+      },
+      {
+        "rule": "design-system-color",
+        "value": "#64748b",
+        "reason": "User-specified literal footer text color",
+        "createdAt": "2026-07-04T08:07:00.127Z"
+      },
+      {
+        "rule": "design-system-color",
+        "value": "#cbd5e1",
+        "reason": "User-specified literal text-decoration-color for footer links",
+        "createdAt": "2026-07-04T08:07:00.152Z"
+      }
+    ]
+  }
+}

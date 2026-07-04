@@ -1,0 +1,110 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-07-02T16:27:53Z",
+  "title": "Design System: FlexiAuto",
+  "extensions": {
+    "colorMeta": {
+      "blue": { "role": "primary", "displayName": "Bleu Confiant", "canonical": "oklch(54% 0.17 253)", "tonalRamp": ["#0a2a4d", "#0d3f74", "#0d5fb3", "#1976d2", "#4aa3e5", "#7cc0ef", "#b3ddf6", "#e6f4fc"] },
+      "sage": { "role": "secondary", "displayName": "Vert Sauge", "canonical": "oklch(72% 0.12 141)", "tonalRamp": ["#1c4a26", "#2f7d42", "#4f9b57", "#6fbf73", "#8fd192", "#b1e0b3", "#d3eed4", "#eef8ef"] },
+      "amber": { "role": "tertiary", "displayName": "Ambre Chaleureux", "canonical": "oklch(76% 0.14 75)", "tonalRamp": ["#4a3308", "#8a620f", "#c1861b", "#e5a72f", "#eec166", "#f5d99a", "#faebc9", "#fdf6e8"] },
+      "ink": { "role": "neutral", "displayName": "Encre Principale", "canonical": "oklch(30% 0.05 240)", "tonalRamp": ["#0c1a29", "#17324d", "#2e536f", "#5f7588", "#7b91a3", "#a6b8c4", "#d2dde3", "#f4fbff"] }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Syne Display", "purpose": "Hero, titres de fiche/comparaison, chiffres-clés — jamais en dessous de 700." },
+      "title": { "displayName": "Syne Title", "purpose": "Nom de carte auto-école, titres de section, popup." },
+      "body": { "displayName": "DM Sans Body", "purpose": "Texte courant, formulaires, descriptions." },
+      "label": { "displayName": "DM Sans Label", "purpose": "Badges, KPI, libellés de champ." }
+    },
+    "shadows": [
+      { "name": "ambient-panel", "value": "0 18px 46px rgba(31,86,125,0.16), 0 2px 10px rgba(31,86,125,0.08)", "purpose": "Ombre par défaut des panneaux flottants (sidebar, cartes)." },
+      { "name": "popup-clair", "value": "0 24px 70px rgba(31,86,125,0.18)", "purpose": "Popups et cartes de connexion sur fond clair." },
+      { "name": "glow-bleu", "value": "0 2px 12px rgba(25,118,210,0.35)", "purpose": "Halo sous les boutons primaires et CTA, s'intensifie au hover." }
+    ],
+    "motion": [
+      { "name": "ease-standard", "value": "ease .18s-.25s", "purpose": "Transitions de hover/focus sur boutons et cartes." },
+      { "name": "pulse-ring", "value": "2.6s ease-out infinite scale(1→1.85) opacity(.6→0)", "purpose": "Anneau de pulsation autour des markers de carte." }
+    ],
+    "breakpoints": []
+  },
+  "components": [
+    {
+      "name": "Bouton Primaire",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Action principale (S'inscrire, CTA fiche, comparer).",
+      "html": "<button class=\"ds-btn-primary\">S'inscrire</button>",
+      "css": ".ds-btn-primary { display:flex; align-items:center; justify-content:center; white-space:nowrap; font-family:'Syne',sans-serif; font-weight:700; font-size:13px; padding:9px 20px; border-radius:100px; border:1px solid rgba(13,95,179,.25); color:#fff; background:linear-gradient(135deg,#1976d2,#0d5fb3); box-shadow:0 2px 12px rgba(25,118,210,0.35); cursor:pointer; transition:box-shadow .2s, transform .2s; } .ds-btn-primary:hover { background:linear-gradient(135deg,#2184df,#0d5fb3); box-shadow:0 4px 20px rgba(25,118,210,0.5); transform:translateY(-1px); } .ds-btn-primary:focus-visible { outline:2px solid #1976d2; outline-offset:2px; }"
+    },
+    {
+      "name": "Bouton Secondaire",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Action secondaire (Voir la fiche, retour, filtre actif).",
+      "html": "<button class=\"ds-btn-secondary\">Voir la fiche</button>",
+      "css": ".ds-btn-secondary { display:flex; align-items:center; justify-content:center; white-space:nowrap; font-family:'DM Sans',sans-serif; font-weight:500; font-size:13px; padding:9px 20px; border-radius:100px; border:1px solid rgba(25,118,210,.16); color:#2e536f; background:rgba(255,255,255,.86); cursor:pointer; transition:all .2s; } .ds-btn-secondary:hover { background:#fff; color:#17324d; border-color:rgba(25,118,210,.32); box-shadow:0 12px 30px rgba(31,86,125,.13); } .ds-btn-secondary:focus-visible { outline:2px solid #1976d2; outline-offset:2px; }"
+    },
+    {
+      "name": "Carte Auto-École",
+      "kind": "card",
+      "refersTo": "card-listing",
+      "description": "Carte de liste dans la sidebar (score, KPIs, badge places).",
+      "html": "<div class=\"ds-card\"><div class=\"ds-card-top\"><div class=\"ds-av\">AE</div><div><div class=\"ds-nm\">Auto-École Centrale</div><div class=\"ds-ct\">Lyon 3e</div></div></div><div class=\"ds-kpis\"><div class=\"ds-kpi\"><div class=\"ds-kpi-val\">92%</div><div class=\"ds-kpi-lbl\">Réussite</div></div><div class=\"ds-kpi\"><div class=\"ds-kpi-val\">4.8</div><div class=\"ds-kpi-lbl\">Note</div></div><div class=\"ds-kpi\"><div class=\"ds-kpi-val\">890€</div><div class=\"ds-kpi-lbl\">Forfait</div></div></div></div>",
+      "css": ".ds-card { background:rgba(255,255,255,.88); border:1px solid rgba(25,118,210,.15); border-radius:14px; padding:13px 14px; font-family:'DM Sans',sans-serif; transition:border-color .18s, background .18s; } .ds-card:hover { border-color:rgba(25,118,210,.36); background:#fff; } .ds-card-top { display:flex; align-items:center; gap:10px; margin-bottom:10px; } .ds-av { width:36px; height:36px; border-radius:9px; background:linear-gradient(135deg,rgba(25,118,210,.12),rgba(111,191,115,.14)); border:1px solid rgba(25,118,210,.22); display:flex; align-items:center; justify-content:center; font-family:'Syne',sans-serif; font-weight:700; font-size:12px; color:#0d5fb3; } .ds-nm { font-family:'Syne',sans-serif; font-weight:600; font-size:13px; color:#17324d; } .ds-ct { font-size:11px; color:#5f7588; margin-top:2px; } .ds-kpis { display:grid; grid-template-columns:repeat(3,1fr); gap:5px; } .ds-kpi { background:rgba(255,255,255,.72); border:1px solid rgba(25,118,210,.12); border-radius:8px; padding:7px 5px; text-align:center; } .ds-kpi-val { font-family:'Syne',sans-serif; font-weight:700; font-size:12px; color:#2f7d42; } .ds-kpi-lbl { font-size:9px; color:#7b91a3; text-transform:uppercase; letter-spacing:.3px; }"
+    },
+    {
+      "name": "Champ de Recherche",
+      "kind": "input",
+      "refersTo": "input-search",
+      "description": "Barre de recherche ville/code postal (header et sidebar).",
+      "html": "<div class=\"ds-search\"><svg class=\"ds-search-icon\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><circle cx=\"11\" cy=\"11\" r=\"7\"/><path d=\"M21 21l-4.3-4.3\"/></svg><input type=\"text\" placeholder=\"Ville ou code postal\"/></div>",
+      "css": ".ds-search { position:relative; max-width:400px; } .ds-search input { width:100%; padding:10px 16px 10px 40px; background:rgba(255,255,255,.92); border:1px solid rgba(25,118,210,.18); border-radius:100px; color:#17324d; font-family:'DM Sans',sans-serif; font-size:13px; outline:none; box-shadow:0 8px 24px rgba(31,86,125,.08); transition:all .2s; } .ds-search input:focus { background:#fff; border-color:rgba(25,118,210,.46); box-shadow:0 0 0 4px rgba(25,118,210,.10); } .ds-search input::placeholder { color:#5f7588; } .ds-search-icon { position:absolute; left:14px; top:50%; transform:translateY(-50%); width:15px; height:15px; stroke:#5f7588; pointer-events:none; }"
+    },
+    {
+      "name": "Badge Places Disponibles",
+      "kind": "chip",
+      "refersTo": "badge-slots",
+      "description": "Statut de disponibilité sur une carte auto-école.",
+      "html": "<span class=\"ds-badge ds-badge-ok\">3 places</span>",
+      "css": ".ds-badge { display:inline-flex; align-items:center; font-size:10px; font-weight:600; padding:3px 8px; border-radius:100px; letter-spacing:.2px; font-family:'DM Sans',sans-serif; } .ds-badge-ok { background:rgba(111,191,115,.14); border:1px solid rgba(111,191,115,.36); color:#2f7d42; } .ds-badge-urgent { background:rgba(229,78,78,.10); border:1px solid rgba(229,78,78,.28); color:#a83636; } .ds-badge-hot { background:rgba(229,167,47,.12); border:1px solid rgba(229,167,47,.35); color:#8a620f; }"
+    },
+    {
+      "name": "Marker de Carte",
+      "kind": "custom",
+      "refersTo": "map-marker",
+      "description": "Marker Google Maps signature — cercle bleu avec anneau de pulsation et icône voiture.",
+      "html": "<div class=\"ds-mk\"><div class=\"ds-mk-ring\"></div><div class=\"ds-mk-body\"><svg viewBox=\"0 0 24 24\" width=\"13\" height=\"13\" fill=\"white\"><path d=\"M5 11l1.5-4.5A2 2 0 0 1 8.4 5h7.2a2 2 0 0 1 1.9 1.5L19 11v6a1 1 0 0 1-1 1h-1a1 1 0 0 1-1-1v-1H8v1a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1v-6z\"/></svg></div></div>",
+      "css": ".ds-mk { width:36px; height:36px; position:relative; cursor:pointer; } .ds-mk-ring { position:absolute; inset:0; border-radius:50%; background:rgba(25,118,210,.12); border:1.5px solid rgba(25,118,210,.35); animation:ds-pulse-ring 2.6s ease-out infinite; } .ds-mk-body { position:absolute; inset:5px; border-radius:50%; background:linear-gradient(145deg,#4aa3e5,#0d5fb3); box-shadow:0 2px 10px rgba(25,118,210,.6), inset 0 1px 0 rgba(255,255,255,.25); display:flex; align-items:center; justify-content:center; transition:transform .18s, box-shadow .18s; } .ds-mk:hover .ds-mk-body { transform:scale(1.2); box-shadow:0 4px 18px rgba(25,118,210,.8); } @keyframes ds-pulse-ring { 0% { transform:scale(1); opacity:.6; } 70% { transform:scale(1.85); opacity:0; } 100% { transform:scale(1.85); opacity:0; } }"
+    }
+  ],
+  "narrative": {
+    "northStar": "La Route Claire",
+    "overview": "FlexiAuto se pense comme un trajet balisé et lumineux vers le permis de conduire, pas comme un formulaire administratif à remplir. La carte occupe l'écran, le fond est clair et aéré (blanc, bleu très pâle), et chaque élément flotte sur des surfaces en verre dépoli qui laissent la carte visible en dessous — la navigation reste le décor, jamais reléguée à une vignette. Le bleu (#1976d2) porte la confiance et l'action ; le vert sauge (#6fbf73) marque exclusivement la réussite (taux de réussite, disponibilité, sélection comparateur), jamais utilisé comme couleur de marque à parts égales avec le bleu. Syne en display apporte la carrure et le caractère moderne sur les titres et les chiffres-clés ; DM Sans porte tout le texte courant avec une lecture posée. Le système rejette explicitement le style institutionnel des sites d'auto-école traditionnels (bleu-blanc-rouge terne, formulaires austères) et l'esthétique comparateur low-cost saturée de pop-ups et de bannières.",
+    "keyCharacteristics": [
+      "Fond clair, aéré, jamais dense — le blanc et le bleu très pâle dominent, la carte reste visible en arrière-plan derrière les panneaux.",
+      "Bleu = action et confiance ; vert sauge = signal de réussite uniquement, toujours secondaire.",
+      "Syne (800/700) pour tout ce qui doit avoir du caractère : titres, logo, chiffres, boutons principaux. DM Sans (400/500) pour tout le reste.",
+      "Boutons pilule (radius 100px) pour les actions, cartes à coins arrondis (12–18px) pour le contenu.",
+      "Verre dépoli omniprésent dans le code actuel — à réduire, pas à imiter davantage."
+    ],
+    "rules": [
+      { "name": "La Règle du Vert Rare", "body": "Le vert sauge ne décore jamais une surface par défaut — il apparaît uniquement pour confirmer un fait positif (réussite, disponibilité, sélection). Si un élément vert n'annonce pas une bonne nouvelle, ce n'est pas la bonne couleur.", "section": "colors" },
+      { "name": "La Règle du Poids Minimum", "body": "Syne n'apparaît jamais en dessous du poids 600 — en dessous, utiliser DM Sans. Un Syne léger perd le caractère qui justifie son usage.", "section": "typography" },
+      { "name": "La Règle du Verre Dépoli Rare", "body": "Le blur ne devrait exister que sur les surfaces vraiment flottantes au-dessus de la carte (popups, overlay de connexion, barre de comparaison) — pas sur chaque carte de la liste ni chaque input. Le code actuel applique le blur presque partout ; c'est une dette visuelle à corriger, pas un pattern à reproduire.", "section": "elevation" }
+    ],
+    "dos": [
+      "Do garder la carte visible en arrière-plan derrière tous les panneaux flottants — c'est le cœur de l'expérience, jamais une vignette secondaire.",
+      "Do réserver le vert sauge au signal de réussite (taux de réussite, disponibilité, sélection) — jamais comme couleur de marque à parts égales avec le bleu.",
+      "Do utiliser Syne à 700 minimum pour tout ce qui doit avoir du caractère (titres, chiffres, boutons principaux) ; DM Sans pour tout le reste.",
+      "Do garder les boutons en forme de pilule (radius 100px) pour toutes les actions principales.",
+      "Do vérifier le contraste texte/fond sur chaque nouvelle surface teintée — le texte muted (#7b91a3) est proche de la limite AA sur fond clair, ne pas descendre en dessous sur du texte de lecture."
+    ],
+    "donts": [
+      "Don't appliquer le verre dépoli (backdrop-filter blur) par défaut sur chaque carte ou input — réserver le blur aux surfaces vraiment flottantes au-dessus de la carte (popups, overlay de connexion, barre de comparaison flottante).",
+      "Don't utiliser une bordure gauche colorée comme accent sur une carte ou un badge — utiliser un fond teinté ou une bordure complète.",
+      "Don't reproduire le style institutionnel des sites d'auto-école traditionnels (bleu-blanc-rouge terne, formulaires austères) ni l'esthétique comparateur low-cost surchargée de pop-ups et bannières publicitaires.",
+      "Don't modifier le style visuel de la carte Google Maps elle-même, ni la clé API Google Maps.",
+      "Don't descendre Syne en dessous du poids 600, ni utiliser une taille de texte inférieure à 10px.",
+      "Don't empiler deux box-shadow sur un même élément, sauf sur les popups où c'est déjà la convention établie."
+    ]
+  }
+}
