@@ -66,9 +66,8 @@ body::before{content:"";position:fixed;inset:0;z-index:1;pointer-events:none;bac
   display:flex;align-items:center;gap:18px;
   background:linear-gradient(180deg,rgba(5,7,10,0.95) 0%,transparent 100%);
 }
-.logo{font-family:'Syne',sans-serif;font-weight:800;font-size:21px;display:flex;align-items:center;gap:9px;flex-shrink:0;cursor:pointer;color:var(--text);text-decoration:none}
-.logo-icon{width:28px;height:28px;background:linear-gradient(135deg,var(--emerald),var(--blue));border-radius:7px;display:flex;align-items:center;justify-content:center;box-shadow:0 0 22px rgba(111,191,115,0.38)}
-.logo-icon svg{width:15px;height:15px;fill:white}
+.logo{display:flex;align-items:center;flex-shrink:0;cursor:pointer;text-decoration:none}
+.logo-img{height:38px;width:auto;display:block}
 .search-wrap{flex:1;max-width:400px;position:relative}
 .search-wrap input{width:100%;padding:10px 16px 10px 40px;background:rgba(9,18,22,0.7);border:1px solid var(--border);border-radius:100px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:13px;outline:none;backdrop-filter:blur(16px);transition:all .2s}
 .search-wrap input::placeholder{color:var(--muted2)}
@@ -626,8 +625,7 @@ body::before{content:"";position:fixed;inset:0;z-index:1;pointer-events:none;bac
 <!-- HEADER -->
 <div id="header">
   <a class="logo" onclick="showHome()">
-    <div class="logo-icon"><svg viewBox="0 0 24 24"><path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 16c-.83 0-1.5-.67-1.5-1.5S5.67 13 6.5 13s1.5.67 1.5 1.5S7.33 16 6.5 16zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM5 11l1.5-4.5h11L19 11H5z"/></svg></div>
-    FlexiAuto
+    <img src="logo-flexiauto.png" alt="FlexiAuto" class="logo-img">
   </a>
   <div class="search-wrap" id="sw">
     <span class="search-icon"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg></span>
@@ -636,7 +634,7 @@ body::before{content:"";position:fixed;inset:0;z-index:1;pointer-events:none;bac
   </div>
   <div class="h-nav">
     <button class="h-btn" onclick="showCarte()">Explorer</button>
-    <button class="h-btn primary" onclick="window.location.href='https://flexi-app-peach.vercel.app/login'">Se connecter</button>
+    <button class="h-btn primary" onclick="window.location.href='connexion.html'">Se connecter</button>
   </div>
 </div>
 
@@ -648,7 +646,7 @@ body::before{content:"";position:fixed;inset:0;z-index:1;pointer-events:none;bac
     <p class="hero-sub">Comparez les auto-écoles près de chez vous.<br>Notes, taux de réussite, tarifs — tout en un.</p>
     <div class="hero-btns">
       <button class="btn-main accent" onclick="showCarte()">Rechercher une auto-école</button>
-      <button class="btn-main" onclick="window.location.href='https://flexi-app-peach.vercel.app/login'">Se connecter à mon espace</button>
+      <button class="btn-main" onclick="window.location.href='connexion.html'">Se connecter à mon espace</button>
     </div>
     <div class="hero-stats">
       <div><div class="h-stat-n">89%</div><div class="h-stat-l">Taux réussite moyen</div></div>
@@ -749,8 +747,7 @@ body::before{content:"";position:fixed;inset:0;z-index:1;pointer-events:none;bac
   <div class="login-card">
     <button class="login-x" onclick="closeLogin()">✕</button>
     <div class="login-logo">
-      <div class="logo-icon" style="width:24px;height:24px;border-radius:6px"><svg viewBox="0 0 24 24" style="width:13px;height:13px"><path fill="white" d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 16c-.83 0-1.5-.67-1.5-1.5S5.67 13 6.5 13s1.5.67 1.5 1.5S7.33 16 6.5 16zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM5 11l1.5-4.5h11L19 11H5z"/></svg></div>
-      FlexiAuto
+      <img src="logo-flexiauto.png" alt="FlexiAuto" style="height:28px;width:auto;display:block">
     </div>
     <p class="login-sub">Espace élève — Connexion</p>
     <div class="field"><label>Email ou identifiant</label><input type="email" placeholder="marie.martin@email.com"></div>

@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FlexiAuto — Admin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<style>
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Inter',system-ui,-apple-system,sans-serif;color:#17324d;background:#F8FAFF;
+    -webkit-font-smoothing:antialiased;line-height:1.5;}
+  a{color:inherit;text-decoration:none}
+  button{font-family:'Inter',sans-serif}
+  :root{--blue:#1B4FD8;--ink:#17324d;--muted:#5f7588;--bord:#E7ECF7;--sage:#16A34A;--amber:#D97706;}
+
+  /* ============================ LAYOUT ============================ */
+  .admin-shell{display:flex;min-height:100vh}
+
+  .admin-sidebar{
+    width:240px;flex-shrink:0;background:#0F172A;color:#fff;display:flex;flex-direction:column;
+    position:fixed;top:0;bottom:0;left:0;z-index:200;transition:transform .25s ease;
+  }
+  .sidebar-logo{padding:20px 20px 16px;display:flex;align-items:center;gap:10px}
+  .sidebar-logo img{height:30px;width:auto}
+  .sidebar-nav{flex:1;padding:8px 12px;display:flex;flex-direction:column;gap:2px}
+  .nav-item{
+    display:flex;align-items:center;gap:10px;text-align:left;padding:11px 14px;border-radius:8px;
+    background:transparent;border:none;color:#CBD5E1;font-size:13.5px;font-weight:500;cursor:pointer;
+    transition:background .15s,color .15s;
+  }
+  .nav-item:hover{background:rgba(255,255,255,.06);color:#fff}
+  .nav-item.active{background:var(--blue);color:#fff}
+  .sidebar-foot{padding:14px 20px 20px;border-top:1px solid rgba(255,255,255,.08)}
+  .sidebar-user{font-size:12px;color:#94A3B8;margin-bottom:10px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .sidebar-logout{
+    width:100%;padding:9px 12px;border-radius:8px;border:1px solid rgba(255,255,255,.14);
+    background:transparent;color:#fff;font-size:13px;font-weight:600;cursor:pointer;transition:background .15s;
+  }
+  .sidebar-logout:hover{background:rgba(255,255,255,.08)}
+
+  .sidebar-backdrop{display:none;position:fixed;inset:0;background:rgba(15,23,42,.5);z-index:190}
+
+  .admin-main{flex:1;min-width:0;margin-left:240px;display:flex;flex-direction:column;min-height:100vh}
+  .admin-topbar{
+    height:62px;padding:0 28px;display:flex;align-items:center;gap:14px;
+    background:#fff;border-bottom:1px solid var(--bord);flex-shrink:0;
+  }
+  .admin-topbar h1{font-size:18px;font-weight:800;letter-spacing:-0.01em;color:var(--ink)}
+  .mobile-menu-btn{display:none;background:none;border:none;font-size:20px;cursor:pointer;color:var(--ink)}
+  .admin-content{padding:28px;flex:1;overflow-x:hidden}
+
+  .admin-section{display:none}
+  .admin-section.active{display:block}
+
+  /* ============================ MÉTRIQUES ============================ */
+  .metrics-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:16px}
+  .metric-card{
+    background:#fff;border-radius:12px;padding:20px;box-shadow:0 4px 14px rgba(15,23,42,.06);
+    border:1px solid var(--bord);
+  }
+  .metric-card .m-label{font-size:12px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.03em}
+  .metric-card .m-value{font-size:24px;font-weight:500;color:var(--ink);margin-top:8px;letter-spacing:-0.01em}
+  .metric-card .m-value.loading{color:#CBD5E1}
+
+  /* ============================ TOOLBAR + TABLEAUX ============================ */
+  .table-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px}
+  .table-search{
+    height:38px;padding:0 14px;border-radius:100px;border:1px solid var(--bord);
+    font-size:13.5px;width:260px;max-width:100%;background:#fff;
+  }
+  .table-search:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 3px rgba(27,79,216,.1)}
+
+  .table-wrap{background:#fff;border-radius:12px;border:1px solid var(--bord);overflow:auto;box-shadow:0 4px 14px rgba(15,23,42,.05)}
+  table.admin-table{width:100%;border-collapse:collapse;font-size:13px;white-space:nowrap}
+  .admin-table th{
+    text-align:left;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;
+    font-weight:700;padding:11px 14px;border-bottom:1px solid var(--bord);background:#FAFBFF;position:sticky;top:0;
+  }
+  .admin-table td{padding:11px 14px;border-bottom:1px solid #F1F5F9;color:var(--ink)}
+  .admin-table tr:nth-child(even) td{background:#FAFBFF}
+  .admin-table tr:hover td{background:#F0F5FF}
+  .admin-table tr.row-nouveau td{background:#FEF9EC}
+  .admin-table tr.row-nouveau:hover td{background:#FDF3D6}
+
+  .statut-select{
+    height:30px;padding:0 8px;border-radius:100px;border:1px solid var(--bord);font-size:12px;
+    font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;
+  }
+  .statut-select.st-nouveau{background:#FEF3E0;color:var(--amber);border-color:#FBDDA8}
+  .statut-select.st-contacte{background:#EEF3FE;color:var(--blue);border-color:#C9D9FA}
+  .statut-select.st-converti{background:#E6F7EC;color:var(--sage);border-color:#BBEBCB}
+  .statut-select.st-refuse,.statut-select.st-perdu{background:#F1F5F9;color:#64748B;border-color:#E2E8F0}
+
+  .table-loading,.table-empty{padding:32px;text-align:center;color:var(--muted);font-size:13.5px}
+
+  /* ============================ FINANCES ============================ */
+  .fin-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:16px;margin-bottom:24px}
+  .fin-placeholder{
+    margin-top:24px;background:#fff;border:1px dashed var(--bord);border-radius:12px;padding:24px;
+    text-align:center;color:var(--muted);font-size:13.5px;
+  }
+
+  /* ============================ RENDEZ-VOUS ============================ */
+  .rdv-card{background:#fff;border-radius:12px;border:1px solid var(--bord);padding:24px;box-shadow:0 4px 14px rgba(15,23,42,.05)}
+  .rdv-card iframe{width:100%;height:640px;border:none;border-radius:8px}
+  .rdv-link{
+    display:inline-flex;margin-top:14px;background:var(--blue);color:#fff;font-size:13.5px;font-weight:700;
+    padding:10px 20px;border-radius:100px;
+  }
+
+  h2.section-h{font-size:15px;font-weight:800;color:var(--ink);margin:0 0 14px}
+
+  @media (max-width:900px){
+    .admin-sidebar{transform:translateX(-100%)}
+    .admin-sidebar.open{transform:translateX(0)}
+    .sidebar-backdrop.open{display:block}
+    .admin-main{margin-left:0}
+    .mobile-menu-btn{display:block}
+  }
+</style>
+</head>
+<body>
+  <div class="admin-shell">
+    <div class="sidebar-backdrop" id="sidebar-backdrop"></div>
+    <aside class="admin-sidebar" id="admin-sidebar">
+      <div class="sidebar-logo">
+        <img src="logo-flexiauto.png" alt="FlexiAuto">
+      </div>
+      <nav class="sidebar-nav">
+        <button class="nav-item active" data-section="overview">📊 Vue d'ensemble</button>
+        <button class="nav-item" data-section="partners">📋 Candidatures partenaires</button>
+        <button class="nav-item" data-section="prospects">🎯 Prospects auto-école</button>
+        <button class="nav-item" data-section="finances">💰 Finances</button>
+        <button class="nav-item" data-section="rdv">📅 Rendez-vous</button>
+      </nav>
+      <div class="sidebar-foot">
+        <div class="sidebar-user" id="sidebar-user"></div>
+        <button class="sidebar-logout" id="btn-logout">Se déconnecter</button>
+      </div>
+    </aside>
+
+    <div class="admin-main">
+      <header class="admin-topbar">
+        <button class="mobile-menu-btn" id="mobile-menu-btn">☰</button>
+        <h1 id="section-title">Vue d'ensemble</h1>
+      </header>
+
+      <div class="admin-content">
+
+        <!-- ============ VUE D'ENSEMBLE ============ -->
+        <section class="admin-section active" id="section-overview">
+          <div class="metrics-grid">
+            <div class="metric-card"><div class="m-label">Partenaires actifs</div><div class="m-value loading" id="m-partenaires">…</div></div>
+            <div class="metric-card"><div class="m-label">MRR</div><div class="m-value loading" id="m-mrr">…</div></div>
+            <div class="metric-card"><div class="m-label">Nouveaux prospects ce mois</div><div class="m-value loading" id="m-prospects">…</div></div>
+            <div class="metric-card"><div class="m-label">Candidatures en attente</div><div class="m-value loading" id="m-attente">…</div></div>
+            <div class="metric-card"><div class="m-label">Élèves inscrits</div><div class="m-value loading" id="m-eleves">…</div></div>
+          </div>
+        </section>
+
+        <!-- ============ CANDIDATURES PARTENAIRES ============ -->
+        <section class="admin-section" id="section-partners">
+          <div class="table-toolbar">
+            <input type="search" class="table-search" id="search-partners" placeholder="Rechercher par nom ou ville…">
+          </div>
+          <div class="table-wrap">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>Date</th><th>Auto-école</th><th>Ville</th><th>Gérant</th><th>Email</th>
+                  <th>Téléphone</th><th>Durée</th><th>Statut</th><th>Abonnement</th>
+                </tr>
+              </thead>
+              <tbody id="tbody-partners"><tr><td class="table-loading" colspan="9">Chargement…</td></tr></tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- ============ PROSPECTS AUTO-ÉCOLE ============ -->
+        <section class="admin-section" id="section-prospects">
+          <div class="table-toolbar">
+            <input type="search" class="table-search" id="search-prospects" placeholder="Rechercher par nom ou ville…">
+          </div>
+          <div class="table-wrap">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>Date</th><th>Auto-école</th><th>Ville</th><th>Gérant</th><th>Email</th>
+                  <th>Téléphone</th><th>Choix</th><th>Statut</th>
+                </tr>
+              </thead>
+              <tbody id="tbody-prospects"><tr><td class="table-loading" colspan="8">Chargement…</td></tr></tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- ============ FINANCES ============ -->
+        <section class="admin-section" id="section-finances">
+          <div class="fin-summary">
+            <div class="metric-card"><div class="m-label">Total encaissé ce mois</div><div class="m-value loading" id="fin-total">…</div></div>
+          </div>
+          <h2 class="section-h">Détail par partenaire</h2>
+          <div class="table-wrap">
+            <table class="admin-table">
+              <thead>
+                <tr><th>Auto-école</th><th>Montant / mois</th><th>Début</th><th>Fin d'engagement</th><th>Statut abonnement</th></tr>
+              </thead>
+              <tbody id="tbody-finances"><tr><td class="table-loading" colspan="5">Chargement…</td></tr></tbody>
+            </table>
+          </div>
+          <div class="fin-placeholder">💡 Commissions d'affiliation à reverser — sera disponible quand le code de la route sera lancé.</div>
+        </section>
+
+        <!-- ============ RENDEZ-VOUS ============ -->
+        <section class="admin-section" id="section-rdv">
+          <div class="rdv-card">
+            <p style="margin-bottom:14px;color:var(--muted);font-size:13.5px">Consulte tes rendez-vous sur Cal.com :</p>
+            <iframe src="https://cal.eu/dante-brunel-6efqep/rendez-vous-conseiller-flexiauto" frameborder="0"></iframe>
+            <a class="rdv-link" href="https://cal.eu/dante-brunel-6efqep/rendez-vous-conseiller-flexiauto" target="_blank" rel="noopener">Ouvrir dans Cal.com ↗</a>
+          </div>
+        </section>
+
+      </div>
+    </div>
+  </div>
+
+  <script>
+    var SUPABASE_URL = "https://nlzplxhetonxvcdckmcq.supabase.co";
+    var SUPABASE_ANON_KEY = "sb_publishable_er7mVFa1fYYWLwGFCacZ8Q_JWX_uyCF";
+    var supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    var accessToken = null;
+    var partnersData = [];
+    var prospectsData = [];
+
+    var PRICE_BY_DUREE = { trimestre: 49.99, semestre: 46.99, annuel: 44.99 };
+    var PARTNER_STATUTS = ['nouveau', 'contacté', 'converti', 'refusé'];
+    var PROSPECT_STATUTS = ['nouveau', 'contacté', 'converti', 'perdu'];
+
+    function fmtDate(iso){
+      if (!iso) return '—';
+      var d = new Date(iso);
+      return d.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    }
+    function fmtEuros(n){
+      return n.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €';
+    }
+    function statutClass(statut){
+      if (statut === 'nouveau') return 'st-nouveau';
+      if (statut === 'contacté') return 'st-contacte';
+      if (statut === 'converti') return 'st-converti';
+      return 'st-refuse';
+    }
+    function escapeHtml(v){
+      return String(v == null ? '' : v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }
+
+    // ==================== GARDE D'ACCÈS ====================
+    supabaseClient.auth.getSession().then(function(sessionRes){
+      var session = sessionRes.data.session;
+      if (!session) { window.location.href = 'connexion.html'; return; }
+
+      accessToken = session.access_token;
+
+      supabaseClient.from('profiles').select('role, email').eq('id', session.user.id).single()
+        .then(function(profileRes){
+          if (profileRes.error || !profileRes.data) { window.location.href = 'connexion.html'; return; }
+
+          var role = profileRes.data.role;
+          if (role === 'eleve') { window.location.href = 'dashboard-eleve.html'; return; }
+          if (role === 'auto_ecole' || role === 'moniteur') { window.location.href = 'dashboard-auto-ecole.html'; return; }
+          if (role !== 'admin') { window.location.href = 'connexion.html'; return; }
+
+          document.getElementById('sidebar-user').textContent = profileRes.data.email || '';
+          loadOverview();
+        });
+    });
+
+    document.getElementById('btn-logout').addEventListener('click', function(){
+      supabaseClient.auth.signOut().then(function(){
+        window.location.href = 'index.html';
+      });
+    });
+
+    // ==================== APPEL EDGE FUNCTIONS ====================
+    function callAdminFunction(name, body){
+      return fetch(SUPABASE_URL + '/functions/v1/' + name, {
+        method: 'POST',
+        headers: {
+          'apikey': SUPABASE_ANON_KEY,
+          'Authorization': 'Bearer ' + accessToken,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(body)
+      }).then(function(res){
+        if (!res.ok) {
+          return res.json().then(function(data){ throw new Error(data.error || ('Erreur ' + res.status)); });
+        }
+        return res.json();
+      });
+    }
+
+    // ==================== NAVIGATION SIDEBAR ====================
+    var sectionTitles = {
+      overview: "Vue d'ensemble",
+      partners: 'Candidatures partenaires',
+      prospects: 'Prospects auto-école',
+      finances: 'Finances',
+      rdv: 'Rendez-vous'
+    };
+    var loadedSections = {};
+
+    document.querySelectorAll('.nav-item').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        var section = btn.dataset.section;
+        document.querySelectorAll('.nav-item').forEach(function(b){ b.classList.toggle('active', b === btn); });
+        document.querySelectorAll('.admin-section').forEach(function(s){ s.classList.remove('active'); });
+        document.getElementById('section-' + section).classList.add('active');
+        document.getElementById('section-title').textContent = sectionTitles[section];
+        document.getElementById('admin-sidebar').classList.remove('open');
+        document.getElementById('sidebar-backdrop').classList.remove('open');
+
+        if (!loadedSections[section]) {
+          loadedSections[section] = true;
+          if (section === 'partners') loadPartners();
+          if (section === 'prospects') loadProspects();
+          if (section === 'finances') loadFinances();
+        }
+      });
+    });
+
+    document.getElementById('mobile-menu-btn').addEventListener('click', function(){
+      document.getElementById('admin-sidebar').classList.add('open');
+      document.getElementById('sidebar-backdrop').classList.add('open');
+    });
+    document.getElementById('sidebar-backdrop').addEventListener('click', function(){
+      document.getElementById('admin-sidebar').classList.remove('open');
+      this.classList.remove('open');
+    });
+
+    // ==================== VUE D'ENSEMBLE ====================
+    function loadOverview(){
+      callAdminFunction('admin-get-data', { resource: 'metrics' }).then(function(m){
+        document.getElementById('m-partenaires').textContent = m.partenaires_actifs;
+        document.getElementById('m-mrr').textContent = fmtEuros(m.mrr);
+        document.getElementById('m-prospects').textContent = m.nouveaux_prospects_mois;
+        document.getElementById('m-attente').textContent = m.candidatures_attente;
+        document.getElementById('m-eleves').textContent = m.eleves_inscrits;
+        document.querySelectorAll('.m-value').forEach(function(el){ el.classList.remove('loading'); });
+      }).catch(function(err){
+        console.error('Erreur chargement métriques:', err);
+      });
+    }
+
+    // ==================== CANDIDATURES PARTENAIRES ====================
+    function loadPartners(){
+      callAdminFunction('admin-get-data', { resource: 'partner_applications' }).then(function(rows){
+        partnersData = rows;
+        renderPartners(rows);
+      }).catch(function(err){
+        console.error('Erreur chargement candidatures:', err);
+        document.getElementById('tbody-partners').innerHTML = '<tr><td class="table-empty" colspan="9">Erreur de chargement.</td></tr>';
+      });
+    }
+
+    function renderPartners(rows){
+      var tbody = document.getElementById('tbody-partners');
+      if (!rows.length) { tbody.innerHTML = '<tr><td class="table-empty" colspan="9">Aucune candidature.</td></tr>'; return; }
+
+      tbody.innerHTML = rows.map(function(r){
+        var options = PARTNER_STATUTS.map(function(s){
+          return '<option value="' + s + '"' + (s === r.statut ? ' selected' : '') + '>' + s + '</option>';
+        }).join('');
+
+        return '<tr class="' + (r.statut === 'nouveau' ? 'row-nouveau' : '') + '">'
+          + '<td>' + fmtDate(r.created_at) + '</td>'
+          + '<td>' + escapeHtml(r.nom_ecole) + '</td>'
+          + '<td>' + escapeHtml(r.ville) + '</td>'
+          + '<td>' + escapeHtml(r.gerant_prenom) + ' ' + escapeHtml(r.gerant_nom) + '</td>'
+          + '<td>' + escapeHtml(r.email) + '</td>'
+          + '<td>' + escapeHtml(r.telephone) + '</td>'
+          + '<td>' + escapeHtml(r.duree_engagement) + '</td>'
+          + '<td><select class="statut-select ' + statutClass(r.statut) + '" data-table="partner_applications" data-id="' + r.id + '">' + options + '</select></td>'
+          + '<td>' + escapeHtml(r.subscription_status || '—') + '</td>'
+          + '</tr>';
+      }).join('');
+
+      wireStatutSelects(tbody);
+    }
+
+    document.getElementById('search-partners').addEventListener('input', function(){
+      var q = this.value.trim().toLowerCase();
+      var filtered = partnersData.filter(function(r){
+        return (r.nom_ecole || '').toLowerCase().indexOf(q) > -1 || (r.ville || '').toLowerCase().indexOf(q) > -1;
+      });
+      renderPartners(filtered);
+    });
+
+    // ==================== PROSPECTS AUTO-ÉCOLE ====================
+    function loadProspects(){
+      callAdminFunction('admin-get-data', { resource: 'prospects_auto_ecole' }).then(function(rows){
+        prospectsData = rows;
+        renderProspects(rows);
+      }).catch(function(err){
+        console.error('Erreur chargement prospects:', err);
+        document.getElementById('tbody-prospects').innerHTML = '<tr><td class="table-empty" colspan="8">Erreur de chargement.</td></tr>';
+      });
+    }
+
+    function renderProspects(rows){
+      var tbody = document.getElementById('tbody-prospects');
+      if (!rows.length) { tbody.innerHTML = '<tr><td class="table-empty" colspan="8">Aucun prospect.</td></tr>'; return; }
+
+      tbody.innerHTML = rows.map(function(r){
+        var options = PROSPECT_STATUTS.map(function(s){
+          return '<option value="' + s + '"' + (s === r.statut ? ' selected' : '') + '>' + s + '</option>';
+        }).join('');
+
+        return '<tr class="' + (r.statut === 'nouveau' ? 'row-nouveau' : '') + '">'
+          + '<td>' + fmtDate(r.created_at) + '</td>'
+          + '<td>' + escapeHtml(r.nom_ecole) + '</td>'
+          + '<td>' + escapeHtml(r.ville) + '</td>'
+          + '<td>' + escapeHtml(r.gerant_prenom) + ' ' + escapeHtml(r.gerant_nom) + '</td>'
+          + '<td>' + escapeHtml(r.email) + '</td>'
+          + '<td>' + escapeHtml(r.telephone) + '</td>'
+          + '<td>' + escapeHtml(r.choix || '—') + '</td>'
+          + '<td><select class="statut-select ' + statutClass(r.statut) + '" data-table="prospects_auto_ecole" data-id="' + r.id + '">' + options + '</select></td>'
+          + '</tr>';
+      }).join('');
+
+      wireStatutSelects(tbody);
+    }
+
+    document.getElementById('search-prospects').addEventListener('input', function(){
+      var q = this.value.trim().toLowerCase();
+      var filtered = prospectsData.filter(function(r){
+        return (r.nom_ecole || '').toLowerCase().indexOf(q) > -1 || (r.ville || '').toLowerCase().indexOf(q) > -1;
+      });
+      renderProspects(filtered);
+    });
+
+    // ==================== CHANGEMENT DE STATUT (partagé) ====================
+    function wireStatutSelects(container){
+      container.querySelectorAll('.statut-select').forEach(function(sel){
+        sel.addEventListener('change', function(){
+          var table = sel.dataset.table;
+          var id = sel.dataset.id;
+          var statut = sel.value;
+          var previousClass = sel.className;
+          sel.disabled = true;
+
+          callAdminFunction('admin-update-statut', { table: table, id: id, statut: statut }).then(function(){
+            sel.className = 'statut-select ' + statutClass(statut);
+            sel.closest('tr').classList.toggle('row-nouveau', statut === 'nouveau');
+            sel.disabled = false;
+            // Garde les jeux de données en mémoire synchronisés (utile si l'utilisateur retape une recherche).
+            [partnersData, prospectsData].forEach(function(list){
+              var row = list.find(function(r){ return r.id === id; });
+              if (row) row.statut = statut;
+            });
+          }).catch(function(err){
+            console.error('Erreur mise à jour statut:', err);
+            sel.className = previousClass;
+            sel.disabled = false;
+            alert("Impossible de mettre à jour le statut. Merci de réessayer.");
+          });
+        });
+      });
+    }
+
+    // ==================== FINANCES ====================
+    function loadFinances(){
+      callAdminFunction('admin-get-data', { resource: 'partner_applications' }).then(function(rows){
+        var actifs = rows.filter(function(r){ return r.statut === 'converti'; });
+        var total = actifs.reduce(function(sum, r){ return sum + (PRICE_BY_DUREE[r.duree_engagement] || 0); }, 0);
+        document.getElementById('fin-total').textContent = fmtEuros(total);
+        document.getElementById('fin-total').classList.remove('loading');
+
+        var tbody = document.getElementById('tbody-finances');
+        if (!actifs.length) { tbody.innerHTML = '<tr><td class="table-empty" colspan="5">Aucun partenaire actif.</td></tr>'; return; }
+
+        tbody.innerHTML = actifs.map(function(r){
+          return '<tr>'
+            + '<td>' + escapeHtml(r.nom_ecole) + '</td>'
+            + '<td>' + fmtEuros(PRICE_BY_DUREE[r.duree_engagement] || 0) + '</td>'
+            + '<td>' + fmtDate(r.partner_since) + '</td>'
+            + '<td>' + fmtDate(r.engagement_end_date) + '</td>'
+            + '<td>' + escapeHtml(r.subscription_status || '—') + '</td>'
+            + '</tr>';
+        }).join('');
+      }).catch(function(err){
+        console.error('Erreur chargement finances:', err);
+        document.getElementById('tbody-finances').innerHTML = '<tr><td class="table-empty" colspan="5">Erreur de chargement.</td></tr>';
+      });
+    }
+  </script>
+</body>
+</html>

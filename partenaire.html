@@ -1,0 +1,902 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FlexiAuto — Devenez partenaire</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.7.0/dist/tabler-icons.min.css">
+
+<style>
+  /* ============================ RESET ============================ */
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  :root{
+    --bleu:#1B4FD8;--bleu-clair:#2E63E6;--indigo:#3730A3;--teal:#0EA5A5;
+    --vert:#16A34A;--vert-clair:#22C55E;--ambre:#F59E0B;
+    --sombre:#0B1220;--texte-doux:#64748B;--footer:#94A3B8;
+    --bord:#E7ECF7;--fond-doux:#F5F8FF;
+    --head:99px; /* § point 1 — mesuré via Playwright (getBoundingClientRect) sur
+       partenaire.html à ≥611px de large : #header 62px + .promo 36,5px (padding/
+       font-size/bouton désormais identiques à index.html) = 98,5px, arrondi à 99px
+       pour ne jamais laisser le contenu passer sous le bandeau fixe. Recalculé si
+       le texte du bandeau change (v. les paliers ≤605px et ≤460px plus bas, où le
+       texte du bandeau passe sur 2 puis 3 lignes). */
+    --grain:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E");
+  }
+  /* § chaque section prend TOUTE la page, topbar comprise — plus de
+     compensation via scroll-padding-top ni via un padding-top de body : les
+     slides font 100vh pile (voir .slide plus bas), le bandeau/topbar fixe
+     flotte simplement PAR-DESSUS (z-index), sans jamais réduire la hauteur
+     réelle des sections. Symétrique sur toutes les sections, y compris la
+     1ère (plus de cas particulier, plus de bande blanche résiduelle). */
+  html{
+    scroll-behavior:smooth;scroll-snap-type:y mandatory;
+    scrollbar-width:none;
+  }
+  html::-webkit-scrollbar{display:none}
+  body{
+    font-family:'Inter',system-ui,-apple-system,sans-serif;
+    color:#0F172A;background:#fff;
+    -webkit-font-smoothing:antialiased;line-height:1.5;overflow-x:hidden;
+  }
+  a{color:inherit;text-decoration:none}
+
+  /* ==================== HEADER FIXE (promo + topbar) ==================== */
+  .header{position:fixed;top:0;left:0;right:0;z-index:100}
+
+  /* Bandeau strictement identique à index.html/nos-offres.html (§ point 1) :
+     dimensions mesurées (padding 7px 16px, font-size 12px, bouton interne
+     padding 3px 12px / font-size 11px, close 18×18px) pour une hauteur de
+     bandeau rigoureusement égale entre les trois pages. */
+  .promo{background:linear-gradient(90deg,#1B4FD8,#2E63E6 60%,#0EA5A5);color:#fff;display:flex;align-items:center;justify-content:center;gap:10px;padding:7px 16px;font-size:12px;font-weight:500;box-shadow:0 1px 2px rgba(15,23,42,.2);}
+  .promo .btn-essai{background:rgba(255,255,255,.9);color:var(--bleu);font-weight:600;font-size:11px;padding:3px 12px;border-radius:12px;white-space:nowrap;transition:transform .15s;}
+  .promo .btn-essai:hover{transform:translateY(-1px)}
+  .promo .close{width:18px;height:18px;border-radius:50%;background:rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;font-size:10px;line-height:1;cursor:pointer;border:none;color:#fff;flex-shrink:0}
+
+  /* Topbar : même classes/valeurs que nos-offres.html (logo plat #1B4FD8 +
+     voiture blanche, .h-btn-info / .h-btn.primary), pas de backdrop-filter
+     (Règle du Verre Dépoli Banni, DESIGN.md). position:fixed conservé sur le
+     wrapper .header (propre à partenaire.html, nécessaire au scroll-snap
+     plein écran des slides).
+     § problème 3 — fond RENDU OPAQUE (aucun alpha < 1, contrairement à
+     nos-offres.html/index.html où le header n'est pas fixed et où le fondu
+     vers transparent ne pose pas de problème). Ici la topbar est fixed
+     au-dessus de sections plein écran très colorées (sombre, dégradés) qui
+     défilent dessous : un dégradé qui finit en alpha 0 laisse ces couleurs
+     transparaître. Même aspect visuel (dégradé blanc/bleu très pâle) mais
+     entièrement opaque du haut en bas. */
+  #header{padding:0 28px;height:62px;display:flex;align-items:center;gap:18px;background:linear-gradient(180deg,#F4FBFF 0%,#F2F8FE 70%,#FFFFFF 100%);}
+  .logo{display:flex;align-items:center;flex-shrink:0;cursor:pointer;text-decoration:none}
+  .logo-img{height:38px;width:auto;display:block}
+  .h-nav{display:flex;align-items:center;gap:10px;margin-left:auto}
+  .h-btn-info{display:flex;align-items:center;gap:4px;height:34px;padding:0 12px;border-radius:8px;font-size:13px;color:#374151;background:transparent;border:none;cursor:pointer;font-family:'Inter',sans-serif;transition:background .15s}
+  .h-btn-info:hover{background:rgba(0,0,0,.05)}
+  .h-btn{padding:9px 20px;border-radius:100px;font-size:13px;font-weight:500;cursor:pointer;font-family:'Inter',sans-serif;transition:all .2s;background:rgba(255,255,255,.86);color:#2e536f;border:1px solid rgba(25,118,210,.16);box-shadow:0 8px 22px rgba(31,86,125,.08)}
+  .h-btn:hover{background:#fff;color:#17324d;border-color:rgba(25,118,210,.32);box-shadow:0 12px 30px rgba(31,86,125,.13)}
+  .h-btn.primary{background:linear-gradient(135deg,#1976d2,#0d5fb3);color:#fff;border-color:rgba(13,95,179,.25);box-shadow:0 10px 24px rgba(25,118,210,.22)}
+  .h-btn.primary:hover{background:linear-gradient(135deg,#2184df,#0d5fb3);box-shadow:0 14px 32px rgba(25,118,210,.28)}
+
+  /* ============================ BOUTONS ============================ */
+  .btn-lg{
+    display:inline-flex;align-items:center;gap:9px;font-size:15px;font-weight:700;
+    padding:15px 28px;border-radius:14px;cursor:pointer;transition:filter .15s,transform .15s;
+  }
+  .btn-lg:hover{filter:brightness(1.05);transform:translateY(-2px)}
+  .btn-primary{background:linear-gradient(180deg,var(--bleu-clair),var(--bleu));color:#fff;box-shadow:0 18px 34px -14px rgba(27,79,216,.65),0 1px 0 rgba(255,255,255,.25) inset}
+  .btn-soft{background:#EEF3FE;color:var(--bleu);border:1px solid #DCE6FA}
+  .btn-white{background:#fff;color:var(--bleu);box-shadow:0 18px 34px -16px rgba(0,0,0,.4)}
+  .btn-glow{background:linear-gradient(120deg,var(--vert-clair),var(--vert));color:#fff;box-shadow:0 18px 34px -14px rgba(22,163,74,.6)}
+
+  /* ==================== ASCENSEUR LATÉRAL (stepper) ==================== */
+  /* § retour à la version d'avant (annulation du rail compact) — largeur
+     bornée (width) : sans ça, la boîte flex s'élargit jusqu'au label le plus
+     long ("Programme d'affiliation") même quand il est invisible (opacity:0
+     occupe quand même sa place), ce qui repoussait la zone réellement
+     cliquable/superposée bien au-delà des points. Position et taille
+     inchangées ensuite (cf. § recentrage plus bas, qui joue uniquement sur
+     le padding-left des slides, pas sur l'ascenseur). */
+  .elevator{
+    position:fixed;left:24px;top:50%;transform:translateY(-50%);z-index:90;
+    display:flex;flex-direction:column;gap:2px;padding:6px 0;width:186px;
+  }
+  .elevator .estep{display:flex;align-items:center;gap:13px;cursor:pointer;color:#94A3B8;position:relative}
+  .elevator .estep .ebullet{
+    width:15px;height:15px;border-radius:50%;border:2px solid #CBD5E1;background:#fff;flex:none;
+    transition:all .3s;position:relative;z-index:1;
+  }
+  .elevator .estep .eline{position:absolute;left:6px;top:15px;width:3px;height:34px;background:#E2E8F0;border-radius:3px;z-index:0}
+  .elevator .estep:last-child .eline{display:none}
+  .elevator .estep .elabel{
+    font-size:12.5px;font-weight:700;letter-spacing:-0.01em;white-space:nowrap;
+    max-width:150px;overflow:hidden;text-overflow:ellipsis;
+    opacity:0;transform:translateX(-6px);transition:all .3s;pointer-events:none;
+  }
+  .elevator .estep .enum{font-size:10px;font-weight:800;color:#B4C0D3;width:14px;text-align:center}
+  .elevator .estep:hover .elabel{opacity:1;transform:translateX(0)}
+  .elevator .estep.active .ebullet{border-color:var(--bleu);background:var(--bleu);box-shadow:0 0 0 5px rgba(27,79,216,.15)}
+  .elevator .estep.active .elabel{opacity:1;transform:translateX(0);color:var(--bleu)}
+  .elevator .estep.active .enum{color:var(--bleu)}
+  .elevator .estep.done .ebullet{border-color:var(--bleu);background:var(--bleu)}
+  .elevator .estep.done .eline{background:var(--bleu)}
+  /* Ascenseur sombre quand la section active est foncée */
+  .elevator.on-dark .estep{color:#8FA6C6}
+  .elevator.on-dark .estep .ebullet{border-color:rgba(255,255,255,.4);background:rgba(255,255,255,.08)}
+  .elevator.on-dark .estep .eline{background:rgba(255,255,255,.2)}
+  .elevator.on-dark .estep .enum{color:#8FA6C6}
+  .elevator.on-dark .estep.active .ebullet{border-color:#5EEAD4;background:#5EEAD4;box-shadow:0 0 0 5px rgba(94,234,212,.2)}
+  .elevator.on-dark .estep.active .elabel{color:#5EEAD4}
+  .elevator.on-dark .estep.active .enum{color:#5EEAD4}
+  .elevator.on-dark .estep.done .ebullet{border-color:#5EEAD4;background:#5EEAD4}
+  .elevator.on-dark .estep.done .eline{background:#5EEAD4}
+
+  /* ==================== SLIDE (section plein écran) ==================== */
+  /* § recentrage modéré — padding-left ramené de 236px à 160px (entre 140 et
+     180px demandé) : assez pour que le texte ne passe jamais sous les points
+     de l'ascenseur (24px + 186px de large = 210px, marge de 46px conservée),
+     mais nettement moins agressif que l'ancien 236px. L'ascenseur retrouve sa
+     position/taille d'avant (voir .elevator) ; seul le padding change ici.
+     § chaque section = 100vh PILE, topbar/bandeau comprise. Le header fixe
+     flotte par-dessus (z-index) sans jamais réduire la hauteur réelle de la
+     section — traitement symétrique sur les 5 sections, y compris la 1ère
+     (plus de cas particulier ni de compensation scroll-padding-top/body). Le
+     contenu réel reste sous le header grâce au centrage vertical de
+     .slide-body (flex:1) : avec plus de hauteur disponible qu'avant, il en
+     est d'autant mieux dégagé. justify-content:space-between + .slide-body
+     en flex:1 gardent la flèche toujours collée en bas, entièrement visible. */
+  .slide{
+    position:relative;overflow:hidden;height:100vh;box-sizing:border-box;
+    scroll-snap-align:start;scroll-snap-stop:always;
+    display:flex;flex-direction:column;justify-content:space-between;
+    padding:26px 28px 20px 160px;
+  }
+  /* position:relative;z-index:1 — passent au-dessus de la barre de
+     transition (.slide::before, plus bas) exactement comme .hero-inner sur
+     nos-offres.html passe au-dessus de .hero::after. */
+  .slide-body{position:relative;z-index:1;flex:1;display:flex;align-items:center;justify-content:center;width:100%;min-height:0;overflow:hidden}
+  .slide-inner{max-width:1180px;width:100%;margin:0 auto}
+
+  /* § dégradés de transition accentués — barre de couleur + masque de fondu,
+     reproduisant exactement la technique de nos-offres.html (.hero::after) :
+     un vrai bandeau de couleur qui s'intensifie vers le bas de la section et
+     annonce la teinte de la section suivante, pas un simple voile alpha. */
+  .slide::before{
+    content:"";position:absolute;left:0;right:0;bottom:0;height:170px;z-index:0;
+    background:linear-gradient(90deg,var(--bleu),#2E8FCB,var(--vert));
+    -webkit-mask-image:linear-gradient(180deg,transparent,#000 85%);
+    mask-image:linear-gradient(180deg,transparent,#000 85%);
+    opacity:.95;pointer-events:none;
+  }
+  #s-avis::before{display:none} /* dernière section : rien à annoncer après elle */
+
+  /* Animation d'entrée */
+  .anim{opacity:0;transform:translateY(34px);transition:opacity .7s cubic-bezier(.22,.61,.36,1),transform .7s cubic-bezier(.22,.61,.36,1)}
+  .slide.in .anim{opacity:1;transform:none}
+  .slide.in .anim.d1{transition-delay:.08s}
+  .slide.in .anim.d2{transition-delay:.16s}
+  .slide.in .anim.d3{transition-delay:.24s}
+
+  /* ==================== CUE (flèche d'annonce) ==================== */
+  /* § flèche recentrée latéralement — align-self:center centre la flèche
+     dans la boîte de contenu (qui commence à padding-left:160px), ce qui la
+     décale de 66px à droite du vrai centre du viewport. transform la ramène
+     au centre réel de l'écran, indépendamment du padding réservé à
+     l'ascenseur (repère de navigation constant, contrairement au contenu
+     marketing au-dessus qui reste décalé pour laisser la place à
+     l'ascenseur). Neutralisé sous 960px où le padding redevient symétrique. */
+  .cue{
+    position:relative;z-index:1;
+    align-self:center;display:flex;flex-direction:column;align-items:center;gap:9px;cursor:pointer;
+    padding-top:10px;flex:none;
+    transform:translateX(-66px);
+  }
+  .cue .cue-msg{font-size:13.5px;font-weight:700;letter-spacing:.01em;text-align:center;max-width:440px}
+  .cue .cue-arrow{
+    width:46px;height:46px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:22px;
+    background:linear-gradient(160deg,var(--bleu-clair),var(--bleu));box-shadow:0 16px 30px -12px rgba(27,79,216,.6);
+    animation:bob 1.8s ease-in-out infinite;
+  }
+  @keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(8px)}}
+  .cue.light .cue-msg{color:#B7C4DC}
+  .cue.light .cue-arrow{background:linear-gradient(160deg,#5EEAD4,#0EA5A5);color:#04252b;box-shadow:0 16px 30px -12px rgba(14,165,165,.6)}
+  .cue.dark .cue-msg{color:var(--texte-doux)}
+
+  /* ========================= SLIDE HÉRO ========================= */
+  .s-hero{
+    background:
+      radial-gradient(760px 480px at 88% -12%,rgba(14,165,165,.16),transparent 68%),
+      radial-gradient(880px 560px at 4% 2%,rgba(27,79,216,.16),transparent 66%),
+      linear-gradient(180deg,#FBFCFF,#F3F7FF);
+  }
+  .s-hero::after{content:"";position:absolute;inset:0;background:var(--grain);opacity:.4;mix-blend-mode:overlay;pointer-events:none}
+  /* § effet bulle — reproduit la technique de .duo sur nos-offres.html
+     (border-radius elliptique arrondi en haut + ombre portée + reflet inset)
+     pour donner l'impression que la section suivante (Visibilité) remonte
+     en arche par-dessus le héro. Ici en overlay contenu DANS la section (pas
+     de margin-top négatif réel) pour ne jamais perturber le cadrage exact
+     100vh-head ni le scroll-snap strict des slides (§ points 3 et 4). */
+  /* § arche pure, sans rectangle — le rayon vertical est EGAL à la hauteur
+     de l'élément (au lieu d'être plus petit qu'elle) : ça élimine la bande
+     rectangulaire plate qui restait sous la courbe (coins bas à 0 par
+     construction du border-radius). Toute la hauteur est consommée par la
+     courbe, résultat : une arche pure, jamais de "rectangle blanc" visible
+     en dessous. */
+  .hero-arch{
+    position:absolute;left:0;right:0;bottom:0;height:64px;z-index:0;
+    background:linear-gradient(180deg,#F8FBFF,#F1F8F4);
+    border-radius:50% 50% 0 0/64px 64px 0 0;
+    box-shadow:0 -16px 34px -20px rgba(15,23,42,.24),0 1px 0 rgba(255,255,255,.75) inset;
+    pointer-events:none;
+  }
+  .hero-grid{display:grid;grid-template-columns:1.05fr .95fr;gap:56px;align-items:center}
+  .hero-copy{max-width:560px}
+  .badge{
+    display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:700;
+    color:#fff;background:linear-gradient(120deg,var(--bleu),var(--vert));
+    padding:10px 18px;border-radius:999px;margin-bottom:24px;
+    box-shadow:0 12px 26px -12px rgba(27,79,216,.55);
+  }
+  .hero h1{font-size:clamp(32px,4.4vw,54px);line-height:1.02;font-weight:900;letter-spacing:-0.045em;color:var(--sombre)}
+  .hero h1 .accent{background:linear-gradient(100deg,var(--bleu),var(--teal) 55%,var(--vert));-webkit-background-clip:text;background-clip:text;color:transparent}
+  .hero p{font-size:clamp(15px,1.5vw,18px);color:var(--texte-doux);margin-top:20px}
+  .hero-cta{display:flex;gap:14px;margin-top:30px;flex-wrap:wrap}
+  .hero-trust{display:flex;align-items:center;gap:10px;margin-top:24px;font-size:14px;color:var(--texte-doux);font-weight:500}
+  .hero-trust .dots{display:flex}
+  .hero-trust .dots span{width:30px;height:30px;border-radius:50%;border:2px solid #fff;margin-left:-9px;background:linear-gradient(150deg,#DDE7FB,#CFE7DA);display:flex;align-items:center;justify-content:center;font-size:13px}
+  .hero-trust .dots span:first-child{margin-left:0}
+  .hero-trust b{color:var(--sombre);font-weight:700}
+
+  .hero-visual{position:relative;display:flex;justify-content:center}
+  .hero-visual::before{
+    content:"";position:absolute;inset:-8% -4% -12% -4%;border-radius:34px;z-index:0;
+    background:
+      radial-gradient(circle at 28% 18%,rgba(27,79,216,.18),transparent 55%),
+      radial-gradient(circle at 80% 82%,rgba(22,163,74,.18),transparent 55%),
+      linear-gradient(160deg,#E7F0FF,#E6F7EF);
+    box-shadow:0 40px 90px -50px rgba(27,79,216,.5);
+  }
+
+  /* ==================== CARTE TARIF (colonne droite du héro) ==================== */
+  /* § point 2 — carte réduite à l'essentiel : titre, prix, sélecteur de durée,
+     sous-texte. Plus d'eyebrow ni de badge d'économie (supprimés). */
+  .price-panel{position:relative;z-index:1;width:100%;max-width:420px;background:#fff;border-radius:24px;padding:34px 32px;
+    box-shadow:0 44px 90px -40px rgba(27,79,216,.5),0 8px 20px -10px rgba(15,23,42,.16);border:1px solid #EAEFF9}
+  .price-panel h3{font-size:17px;font-weight:800;letter-spacing:-0.02em;color:var(--sombre)}
+  .price-panel .price{display:flex;align-items:baseline;flex-wrap:wrap;gap:8px;margin-top:14px}
+  .price-panel .price .val{font-size:clamp(38px,5vw,46px);font-weight:900;letter-spacing:-0.03em;line-height:1;background:linear-gradient(120deg,var(--bleu),var(--teal));-webkit-background-clip:text;background-clip:text;color:transparent}
+  .price-panel .price .per{font-size:16px;font-weight:600;color:var(--texte-doux)}
+  .dur-select{display:flex;gap:6px;margin-top:22px;background:#F1F5FB;border-radius:14px;padding:5px}
+  .dur-btn{flex:1;text-align:center;padding:10px 6px;border-radius:10px;font-size:12.5px;font-weight:700;color:#64748B;cursor:pointer;border:none;background:transparent;font-family:'Inter',sans-serif;transition:all .2s;line-height:1.3}
+  .dur-btn small{display:block;font-size:10px;font-weight:600;opacity:.7;margin-top:1px}
+  .dur-btn.active{background:#fff;color:var(--bleu);box-shadow:0 6px 16px -6px rgba(27,79,216,.35)}
+  .price-panel .sub{font-size:13px;color:var(--texte-doux);margin-top:14px}
+
+  /* ==================== VISIBILITÉ (3 blocs) ==================== */
+  .s-visibilite{
+    background:
+      radial-gradient(760px 520px at 92% -10%,rgba(14,165,165,.14),transparent 65%),
+      radial-gradient(820px 560px at 6% 100%,rgba(22,163,74,.14),transparent 62%),
+      linear-gradient(180deg,#FFFFFF,#F4FBF8);
+    color:var(--sombre);
+  }
+  .vis-head{text-align:center;max-width:720px;margin:0 auto 36px}
+  .vis-head .arg-num{font-size:13px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:var(--vert);display:inline-flex;align-items:center;gap:12px;margin-bottom:16px}
+  .vis-head .arg-num::before{content:"";width:34px;height:2px;border-radius:2px;background:currentColor;opacity:.5}
+  .vis-head h2{font-size:clamp(28px,3.6vw,44px);font-weight:900;letter-spacing:-0.04em;line-height:1.05;color:var(--sombre)}
+  .vis-head h2 .accent-vert{background:linear-gradient(100deg,var(--bleu),var(--vert));-webkit-background-clip:text;background-clip:text;color:transparent}
+  .vis-head .lead{font-size:16px;color:var(--texte-doux);margin-top:12px}
+  .vis-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;align-items:stretch}
+  /* Chaque bulle porte le fond teinté de sa propre couleur d'argument
+     (bleu = position carte, teal = recherche Google, vert = avis/notoriété —
+     cohérent avec la Règle du Vert Rare : le vert marque ici un signal
+     positif, la preuve sociale) au lieu du blanc plat, pour harmoniser la
+     section avec le reste de la page. */
+  .vis-block{border-radius:22px;padding:26px 24px;box-shadow:0 30px 60px -42px rgba(15,23,42,.22);display:flex;flex-direction:column}
+  .vis-block h3{font-size:16px;font-weight:800;color:var(--sombre);letter-spacing:-0.01em}
+  .vis-block p{font-size:13.5px;color:var(--texte-doux);margin-top:6px;line-height:1.5}
+  .vis-block-map{background:linear-gradient(165deg,#EEF4FF,#FFFFFF);border:1px solid #DCE6FB}
+  .vis-block-search{background:linear-gradient(165deg,#E9FBFA,#FFFFFF);border:1px solid #CFEFED}
+  .vis-block-reviews{background:linear-gradient(165deg,#EAFAEF,#FFFFFF);border:1px solid #CFEEDA}
+  .vis-illustration{position:relative;margin:-6px -6px 18px;padding:18px 6px 30px;display:flex;align-items:center;justify-content:center;border-radius:16px}
+  .vis-illustration-map{background:radial-gradient(circle at 30% 20%,rgba(27,79,216,.12),transparent 60%),radial-gradient(circle at 80% 80%,rgba(27,79,216,.08),transparent 60%);}
+  .vis-illustration-search{background:radial-gradient(circle at 30% 20%,rgba(14,165,165,.14),transparent 60%),radial-gradient(circle at 80% 80%,rgba(14,165,165,.08),transparent 60%);}
+  .vis-illustration-reviews{background:radial-gradient(circle at 30% 20%,rgba(22,163,74,.14),transparent 60%),radial-gradient(circle at 80% 80%,rgba(22,163,74,.08),transparent 60%);}
+
+  /* Illustration bloc 2 — mini résultat de recherche Google, vous en 1ère position */
+  .search-mock{width:100%;max-width:250px;background:#fff;border-radius:16px;padding:14px;box-shadow:0 20px 40px -22px rgba(14,165,165,.45);border:1px solid #DFF4F3}
+  .sm-bar{display:flex;align-items:center;gap:8px;background:#F1F9F9;border-radius:999px;padding:8px 12px;font-size:11.5px;color:#0E7490;font-weight:600}
+  .sm-result{display:flex;align-items:center;gap:8px;padding:9px;border-radius:10px;margin-top:8px}
+  .sm-result.sm-top{background:linear-gradient(135deg,#E6FBF9,#EAF3FF);border:1px solid #B9EDE8}
+  .sm-pin{font-size:16px;flex:none}
+  .sm-title{font-size:12px;font-weight:800;color:var(--sombre)}
+  .sm-meta{font-size:10px;color:#0E7490;font-weight:600;margin-top:1px}
+  .sm-result.sm-dim{font-size:11px;color:#AEB9C9;font-weight:600;padding-left:32px}
+
+  /* Illustration bloc 3 — note moyenne + avis collectés automatiquement */
+  .review-mock{width:100%;max-width:250px;background:#fff;border-radius:16px;padding:20px 16px;text-align:center;box-shadow:0 20px 40px -22px rgba(22,163,74,.4);border:1px solid #DDF3E3}
+  .rm-score{display:flex;flex-direction:column;align-items:center;gap:2px}
+  .rm-num{font-size:30px;font-weight:900;letter-spacing:-0.03em;color:var(--sombre)}
+  .rm-stars{color:var(--ambre);font-size:14px;letter-spacing:2px}
+  .rm-avatars{display:flex;justify-content:center;margin-top:12px}
+  .rm-av{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:11px;font-weight:800;margin-left:-8px;border:2px solid #fff}
+  .rm-av:first-child{margin-left:0}
+  .rm-av1{background:linear-gradient(150deg,#4285F4,#1B4FD8)}
+  .rm-av2{background:linear-gradient(150deg,#34A853,#16A34A)}
+  .rm-av3{background:linear-gradient(150deg,#FBBC05,#F59E0B)}
+  .rm-tag{display:inline-flex;margin-top:12px;background:#E6F7EC;color:var(--vert);font-size:11px;font-weight:800;padding:5px 12px;border-radius:999px}
+
+  .school-card{
+    position:relative;z-index:1;width:100%;max-width:270px;background:#fff;border-radius:18px;overflow:hidden;
+    box-shadow:0 30px 60px -26px rgba(27,79,216,.5),0 6px 14px -8px rgba(15,23,42,.16);
+    border:1px solid #EAEFF9;transform:rotate(-1.4deg);
+  }
+  .sc-head{background:linear-gradient(155deg,#3B76F5,var(--bleu) 70%,#173FB0);color:#fff;padding:14px 17px 16px;position:relative}
+  .sc-head::after{content:"";position:absolute;inset:0;background:var(--grain);opacity:.25;mix-blend-mode:overlay}
+  .sc-eyebrow{font-size:10px;font-weight:800;letter-spacing:.12em;color:rgba(255,255,255,.72);position:relative}
+  .sc-close{position:absolute;top:12px;right:12px;width:22px;height:22px;border-radius:7px;background:rgba(255,255,255,.18);display:flex;align-items:center;justify-content:center;font-size:12px;color:#fff;z-index:1}
+  .sc-name{font-size:17px;font-weight:800;letter-spacing:-0.02em;margin-top:4px;position:relative}
+  .sc-loc{display:flex;align-items:center;gap:6px;font-size:12px;color:rgba(255,255,255,.9);margin-top:4px;font-weight:500;position:relative}
+  .sc-stats{display:grid;grid-template-columns:1fr 1fr 1fr;background:#fff}
+  .sc-stat{padding:12px 8px;text-align:center;border-right:1px solid #EEF1F7}
+  .sc-stat:last-child{border-right:none}
+  .sc-stat .big{font-size:17px;font-weight:800;letter-spacing:-0.02em;line-height:1}
+  .sc-stat.reussite .big{color:var(--vert)}
+  .sc-stat.note .big{color:var(--ambre)}
+  .sc-stat.permis .big{color:var(--bleu)}
+  .sc-stat .lbl{font-size:10.5px;color:var(--texte-doux);margin-top:5px;font-weight:600}
+  .sc-stat .sub{font-size:9.5px;color:#94A3B8;margin-top:1px}
+  .sc-actions{display:flex;gap:8px;padding:12px 14px 14px}
+  .sc-btn{flex:1;text-align:center;font-size:12px;font-weight:700;padding:9px;border-radius:9px}
+  .sc-btn.fill{background:linear-gradient(180deg,var(--bleu-clair),var(--bleu));color:#fff}
+  .sc-btn.out{background:#fff;color:#475569;border:1px solid #DCE1EC}
+  .card-tag{
+    position:absolute;z-index:2;background:#fff;border-radius:12px;padding:7px 11px;font-size:11px;font-weight:700;color:var(--sombre);
+    box-shadow:0 14px 26px -12px rgba(15,23,42,.4);display:flex;align-items:center;gap:6px;
+  }
+  .card-tag .ico{width:20px;height:20px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:12px}
+  .card-tag.top{top:2%;left:0}
+  .card-tag.top .ico{background:#E6F7EC}
+  .card-tag.bot{bottom:4%;right:0}
+  .card-tag.bot .ico{background:#EAF0FE}
+
+  /* ==================== SLIDE ARGUMENT (affiliation) ==================== */
+  .arg-inner{display:grid;grid-template-columns:1fr 1fr;gap:60px;align-items:center}
+  .arg-num{font-size:13px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;margin-bottom:16px;display:inline-flex;align-items:center;gap:12px}
+  .arg-num::before{content:"";width:34px;height:2px;border-radius:2px;background:currentColor;opacity:.5}
+  .arg h2{font-size:clamp(28px,3.6vw,44px);font-weight:900;letter-spacing:-0.04em;line-height:1.04}
+  .arg .lead{font-size:clamp(15px,1.5vw,18px);margin-top:18px;line-height:1.55}
+  .arg .mini{display:flex;gap:22px;margin-top:24px;flex-wrap:wrap}
+  .arg .mini .m{display:flex;flex-direction:column;text-align:center}
+  .arg .mini .m b{font-size:23px;font-weight:900;letter-spacing:-0.02em}
+  .arg .mini .m span{font-size:13px;opacity:.75;margin-top:2px}
+
+  .s-affiliation{color:#fff;
+    background:
+      radial-gradient(700px 500px at 82% 8%,rgba(34,197,94,.28),transparent 62%),
+      radial-gradient(760px 560px at 10% 92%,rgba(14,165,165,.32),transparent 60%),
+      linear-gradient(155deg,#0B1220 0%,#12235A 46%,#0E4F6B 100%);
+  }
+  .s-affiliation::after{content:"";position:absolute;inset:0;background:var(--grain);opacity:.5;mix-blend-mode:overlay;pointer-events:none}
+  .s-affiliation .arg-num{color:#5EEAD4}
+  .s-affiliation .lead{color:#B7C4DC}
+  .s-affiliation .mini .m:nth-child(1) b{color:#93C5FD}
+  .s-affiliation .mini .m:nth-child(2) b{color:#5EEAD4}
+  .s-affiliation .mini .m:nth-child(3) b{color:#86EFAC}
+
+  .fresque{position:relative;background:linear-gradient(165deg,rgba(255,255,255,.06),rgba(255,255,255,.02));
+    border:1px solid rgba(255,255,255,.14);border-radius:26px;padding:34px 32px 30px;
+    box-shadow:0 50px 100px -50px rgba(0,0,0,.7),0 1px 0 rgba(255,255,255,.14) inset;}
+  .fr-title{font-size:13px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#8FA6C6;margin-bottom:24px}
+  .fr-track{position:relative;display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+  .fr-track::before{content:"";position:absolute;top:30px;left:12%;right:12%;height:3px;border-radius:3px;background:linear-gradient(90deg,#3B82F6,#0EA5A5,#22C55E)}
+  .fr-node{position:relative;text-align:center}
+  .fr-bubble{width:60px;height:60px;border-radius:18px;margin:0 auto 14px;display:flex;align-items:center;justify-content:center;font-size:26px;
+    background:linear-gradient(160deg,#1E3A8A,#2E63E6);box-shadow:0 14px 28px -12px rgba(0,0,0,.7),0 1px 0 rgba(255,255,255,.2) inset;border:1px solid rgba(255,255,255,.16)}
+  .fr-node:nth-child(2) .fr-bubble{background:linear-gradient(160deg,#0E7490,#0EA5A5)}
+  .fr-node:nth-child(3) .fr-bubble{background:linear-gradient(160deg,#15803D,#22C55E)}
+  .fr-val{font-size:25px;font-weight:900;letter-spacing:-0.02em}
+  .fr-node:nth-child(1) .fr-val{color:#93C5FD}
+  .fr-node:nth-child(2) .fr-val{color:#5EEAD4}
+  .fr-node:nth-child(3) .fr-val{color:#86EFAC}
+  .fr-lbl{font-size:12.5px;color:#9FB2CE;margin-top:5px;line-height:1.35}
+  .fr-result{margin-top:26px;display:flex;align-items:center;justify-content:center;gap:10px;text-align:center;
+    background:linear-gradient(120deg,rgba(34,197,94,.2),rgba(14,165,165,.16));border:1px solid rgba(94,234,212,.32);
+    border-radius:16px;padding:16px 18px;font-size:14.5px;font-weight:700}
+  .fr-result strong{color:#86EFAC}
+
+  /* ==================== SLIDE SITE INTERNET ==================== */
+  .s-site{
+    background:
+      radial-gradient(720px 500px at 90% -10%,rgba(27,79,216,.14),transparent 65%),
+      radial-gradient(760px 520px at 8% 100%,rgba(14,165,165,.12),transparent 60%),
+      linear-gradient(180deg,#FFFFFF,#F5F8FF);
+    color:var(--sombre);
+  }
+  .s-site .arg-num{color:var(--bleu)}
+  .s-site .lead{color:var(--texte-doux)}
+  .s-site .opt-tag{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;color:var(--bleu);background:#EEF3FE;border:1px solid #DCE6FA;padding:6px 13px;border-radius:999px;margin-top:16px}
+  .s-site .mini .m b{color:var(--bleu)}
+
+  /* Illustration — mini navigateur avec aperçu de site auto-école */
+  .site-mock{width:100%;max-width:420px;margin:0 auto;background:#fff;border-radius:20px;overflow:hidden;
+    box-shadow:0 44px 90px -40px rgba(27,79,216,.4),0 8px 20px -10px rgba(15,23,42,.14);border:1px solid #E7ECF7}
+  .browser-bar{display:flex;align-items:center;gap:6px;padding:11px 14px;background:#F1F5FB;border-bottom:1px solid #E7ECF7}
+  .browser-bar .bdot{width:8px;height:8px;border-radius:50%;background:#D8E0F0}
+  .browser-bar .burl{margin-left:8px;font-size:11px;color:#64748B;background:#fff;border-radius:6px;padding:4px 10px;flex:1;border:1px solid #E7ECF7}
+  .sp-hero{background:linear-gradient(135deg,var(--bleu),var(--teal));color:#fff;padding:28px 24px;text-align:center;position:relative}
+  .sp-hero::after{content:"";position:absolute;inset:0;background:var(--grain);opacity:.25;mix-blend-mode:overlay}
+  .sp-hero .sp-logo{font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;opacity:.85;position:relative}
+  .sp-hero h4{font-size:19px;font-weight:800;letter-spacing:-0.02em;margin-top:8px;position:relative}
+  .sp-hero p{font-size:12px;opacity:.85;margin-top:6px;position:relative}
+  .sp-hero .sp-btn{display:inline-block;margin-top:16px;background:#fff;color:var(--bleu);font-size:12px;font-weight:700;padding:9px 18px;border-radius:999px;position:relative}
+  .sp-stats{display:grid;grid-template-columns:repeat(3,1fr);padding:18px 14px}
+  .sp-stats .s{text-align:center}
+  .sp-stats .s b{display:block;font-size:16px;font-weight:800;color:var(--sombre)}
+  .sp-stats .s span{font-size:10px;color:var(--texte-doux)}
+
+  /* ==================== SLIDE PREUVE SOCIALE ==================== */
+  .s-avis{color:#fff;
+    background:
+      radial-gradient(700px 500px at 88% 4%,rgba(34,197,94,.24),transparent 62%),
+      radial-gradient(760px 560px at 6% 96%,rgba(27,79,216,.3),transparent 60%),
+      linear-gradient(160deg,#0B1220,#111C3A 55%,#0B2A3A);
+  }
+  .s-avis::after{content:"";position:absolute;inset:0;background:var(--grain);opacity:.5;mix-blend-mode:overlay;pointer-events:none}
+  .head{text-align:center;max-width:720px;margin:0 auto 40px}
+  .head .arg-num{color:#5EEAD4;margin-bottom:10px}
+  .head .eyebrow{color:#5EEAD4;display:block;font-size:12px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;margin-bottom:14px}
+  .head h2{font-size:clamp(26px,3.2vw,38px);font-weight:800;letter-spacing:-0.03em;line-height:1.1;color:#fff}
+  .head p{font-size:16px;color:#A9B7D0;margin-top:12px}
+  .stat-row{display:grid;grid-template-columns:repeat(4,1fr);gap:18px;margin:0 auto 40px;max-width:920px}
+  .stat{text-align:center;background:linear-gradient(165deg,rgba(255,255,255,.08),rgba(255,255,255,.03));border:1px solid rgba(255,255,255,.12);border-radius:20px;padding:22px 14px;box-shadow:0 1px 0 rgba(255,255,255,.12) inset}
+  .stat .n{font-size:clamp(26px,3.2vw,38px);font-weight:900;letter-spacing:-0.03em;background:linear-gradient(120deg,#93C5FD,#5EEAD4);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .stat .k{font-size:12.5px;color:#A9B7D0;margin-top:6px;font-weight:600}
+  .tmt-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+  .tmt{background:linear-gradient(165deg,rgba(255,255,255,.09),rgba(255,255,255,.035));border:1px solid rgba(255,255,255,.13);border-radius:22px;padding:24px 24px;box-shadow:0 30px 60px -40px rgba(0,0,0,.8),0 1px 0 rgba(255,255,255,.12) inset;display:flex;flex-direction:column}
+  .tmt .stars{color:var(--ambre);font-size:14px;letter-spacing:2px}
+  .tmt blockquote{font-size:14.5px;line-height:1.5;color:#E7EDF7;font-weight:500;margin-top:12px;flex:1}
+  .tmt .who{display:flex;align-items:center;gap:12px;margin-top:20px}
+  .tmt .avatar{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:15px}
+  .tmt:nth-child(1) .avatar{background:linear-gradient(150deg,#4285F4,#1B4FD8)}
+  .tmt:nth-child(2) .avatar{background:linear-gradient(150deg,#0EA5A5,#0E7490)}
+  .tmt:nth-child(3) .avatar{background:linear-gradient(150deg,#22C55E,#16A34A)}
+  .tmt .nm{font-size:14px;font-weight:700;color:#fff}
+  .tmt .rl{font-size:12.5px;color:#93A3C2}
+  .social-cta{display:flex;justify-content:center;margin-top:34px}
+
+  /* ==================== BOUTON REMONTER EN HAUT ==================== */
+  .back-top{
+    position:fixed;right:24px;bottom:24px;z-index:150;
+    width:48px;height:48px;border-radius:50%;border:none;cursor:pointer;
+    background:#1B4FD8;color:#fff;font-size:19px;
+    display:flex;align-items:center;justify-content:center;
+    box-shadow:0 10px 24px -8px rgba(27,79,216,.5),0 2px 8px rgba(15,23,42,.12);
+    opacity:0;transform:translateY(10px);pointer-events:none;
+    transition:opacity .25s,transform .25s,filter .15s;
+  }
+  .back-top.visible{opacity:1;transform:translateY(0);pointer-events:auto}
+  .back-top:hover{filter:brightness(1.1)}
+
+  /* ====================== RESPONSIVE ====================== */
+  /* § retour à la version d'avant : l'ascenseur se masque à 960px (comme
+     avant le dernier tour), et le padding-left du slide retombe à 28px
+     (symétrique) une fois l'ascenseur caché — plus besoin de réserver de
+     place pour lui à cette largeur. */
+  @media (max-width:960px){
+    .elevator{display:none}
+    .slide{padding-left:28px}
+    .cue{transform:none}
+    .hero-grid,.arg-inner{grid-template-columns:1fr;gap:36px}
+    .hero-copy{max-width:none;text-align:center;margin:0 auto}
+    .hero-cta,.hero-trust,.badge{justify-content:center;margin-left:auto;margin-right:auto}
+    .vis-grid{grid-template-columns:1fr;max-width:420px;margin:0 auto}
+    .stat-row{grid-template-columns:1fr 1fr}
+    .tmt-grid{grid-template-columns:1fr}
+  }
+  @media (max-width:768px){
+    html{scroll-snap-type:none}
+    /* Sous 768px le scroll-snap plein écran est désactivé : les sections
+       reprennent une hauteur naturelle (auto) et s'empilent en flux normal.
+       Seule la 1ère section a besoin d'être poussée sous le bandeau/topbar
+       fixes (padding-top:head) — les suivantes s'enchaînent normalement,
+       pas besoin de répéter ce décalage à chaque section. */
+    .slide{height:auto;padding:24px 20px 32px}
+    .slide:first-of-type{padding-top:calc(var(--head) + 24px)}
+    .slide::before{height:120px}
+    .promo{flex-wrap:wrap;gap:10px;font-size:12px;text-align:center}
+    #header{padding:0 18px}
+    .h-btn-info{padding:0 10px}
+    .price-panel{padding:26px 22px}
+    .back-top{right:16px;bottom:16px;width:44px;height:44px;font-size:17px}
+    .card-tag.top{left:0}
+    .card-tag.bot{right:0}
+    .cue{padding-top:22px}
+  }
+  /* § point 1 (session précédente) — le texte du bandeau (plus long que sur
+     nos-offres.html) passe sur 2 puis 3 lignes à ces largeurs (mesuré via
+     Playwright) ; --head suit pour que le contenu ne passe jamais sous le
+     bandeau fixe. Sans effet sur le cadrage des slides (déjà en height:auto
+     sous 768px). */
+  @media (max-width:605px){
+    :root{--head:127px}
+  }
+  @media (max-width:460px){
+    :root{--head:145px}
+  }
+</style>
+</head>
+
+<body>
+
+  <!-- ===================== HEADER FIXE ===================== -->
+  <div class="header">
+    <div class="promo" id="cdr-partenaire-banner">
+      <span>🎯 Code de la route — Questions officielles · Moins cher que la concurrence</span>
+      <a href="#" class="btn-essai" onclick="alert('Code de la route — bientôt disponible !');return false;">Essayer gratuit</a>
+      <button class="close" aria-label="Fermer" onclick="document.getElementById('cdr-partenaire-banner').style.display='none';localStorage.setItem('cdr-partenaire-closed','true');">✕</button>
+    </div>
+    <div class="topbar-wrap">
+      <div id="header">
+        <a class="logo" href="index.html">
+          <img src="logo-flexiauto.png" alt="FlexiAuto" class="logo-img">
+        </a>
+        <div style="flex:1"></div>
+        <div class="h-nav">
+          <a class="h-btn-info" href="nos-offres.html">← Retour</a>
+          <a class="h-btn primary" href="connexion.html">Se connecter</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== ASCENSEUR LATÉRAL ===================== -->
+  <nav class="elevator" id="elevator">
+    <a class="estep" data-target="s-hero"><span class="ebullet"></span><span class="eline"></span><span class="enum"></span><span class="elabel">Accueil</span></a>
+    <a class="estep" data-target="s-visibilite"><span class="ebullet"></span><span class="eline"></span><span class="enum">1</span><span class="elabel">Visibilité</span></a>
+    <a class="estep" data-target="s-affiliation"><span class="ebullet"></span><span class="eline"></span><span class="enum">2</span><span class="elabel">Affiliation</span></a>
+    <a class="estep" data-target="s-site"><span class="ebullet"></span><span class="eline"></span><span class="enum">3</span><span class="elabel">Site internet</span></a>
+    <a class="estep" data-target="s-avis"><span class="ebullet"></span><span class="eline"></span><span class="enum">4</span><span class="elabel">Avis clients</span></a>
+  </nav>
+
+  <!-- ===================== BOUTON REMONTER EN HAUT ===================== -->
+  <button class="back-top" id="backTop" aria-label="Remonter en haut">↑</button>
+
+  <!-- ========================= SLIDE 1 — HÉRO + TARIF ========================= -->
+  <section class="slide s-hero" id="s-hero" data-dark="0">
+    <div class="hero-arch"></div>
+    <div class="slide-body">
+      <div class="slide-inner">
+        <div class="hero-grid">
+          <div class="hero-copy hero">
+            <span class="badge anim">⚡ Offre de lancement</span>
+            <h1 class="anim d1">Transformez votre auto-école en <span class="accent">machine à revenus</span></h1>
+            <p class="anim d1">Plus de visibilité, plus d'avis, plus d'élèves — et un abonnement qui se rembourse dès le 4ème inscrit.</p>
+            <div class="hero-cta anim d2">
+              <a href="inscription-partenaire.html?duree=trimestre" class="btn-lg btn-primary" id="cta-partner-hero">Devenir partenaire →</a>
+              <a href="rendez-vous.html" class="btn-lg btn-soft">Prendre rendez-vous</a>
+            </div>
+            <div class="hero-trust anim d3">
+              <div class="dots"><span>🚗</span><span>🎓</span><span>📍</span></div>
+              <span><b>+400 auto-écoles</b> déjà visibles sur FlexiAuto</span>
+            </div>
+          </div>
+
+          <div class="hero-visual anim d2">
+            <div class="price-panel" id="price-panel">
+              <h3>Un tarif simple, sans surprise</h3>
+              <div class="price">
+                <span class="val" id="price-val">49,99€</span>
+                <span class="per">/ mois</span>
+              </div>
+              <div class="dur-select" role="group" aria-label="Durée d'engagement">
+                <button type="button" class="dur-btn active" data-months="4" data-price="49.99">1 trimestre<small>4 mois</small></button>
+                <button type="button" class="dur-btn" data-months="6" data-price="46.99">1 semestre<small>6 mois</small></button>
+                <button type="button" class="dur-btn" data-months="12" data-price="44.99">1 an<small>12 mois</small></button>
+              </div>
+              <p class="sub" id="price-sub">Engagement de 4 mois, résiliable à l'échéance.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <a class="cue dark" data-target="s-visibilite">
+      <span class="cue-msg">Découvrir le contenu de l'offre</span>
+      <span class="cue-arrow">↓</span>
+    </a>
+  </section>
+
+  <!-- ================= SLIDE 2 — GAIN DE VISIBILITÉ ================= -->
+  <section class="slide s-visibilite" id="s-visibilite" data-dark="0">
+    <div class="slide-body">
+      <div class="slide-inner">
+        <div class="vis-head anim">
+          <span class="arg-num">1 · Visibilité</span>
+          <h2><span class="accent-vert">Sortez de l'ombre.</span></h2>
+          <p class="lead">Vos concurrents ne passeront plus devant vous.</p>
+        </div>
+        <div class="vis-grid">
+          <div class="vis-block vis-block-map anim d1">
+            <div class="vis-illustration vis-illustration-map">
+              <span class="card-tag top"><span class="ico">📍</span>1ère position</span>
+              <div class="school-card">
+                <div class="sc-head">
+                  <div class="sc-close">✕</div>
+                  <div class="sc-eyebrow">AUTO-ÉCOLE</div>
+                  <div class="sc-name">Fac Auto-École</div>
+                  <div class="sc-loc">📍 Auterive</div>
+                </div>
+                <div class="sc-stats">
+                  <div class="sc-stat reussite"><div class="big">56%</div><div class="lbl">Réussite</div></div>
+                  <div class="sc-stat note"><div class="big">★ 4.8</div><div class="lbl">Note</div><div class="sub">(226 avis)</div></div>
+                  <div class="sc-stat permis"><div class="big">B</div><div class="lbl">Permis</div></div>
+                </div>
+                <div class="sc-actions">
+                  <div class="sc-btn fill">Visiter le site</div>
+                  <div class="sc-btn out">S'inscrire</div>
+                </div>
+              </div>
+              <span class="card-tag bot"><span class="ico">⭐</span>Avis auto</span>
+            </div>
+            <h3>🗺️ Mise en avant partenaires</h3>
+            <p>Vos concurrents passent derrière vous.</p>
+          </div>
+          <div class="vis-block vis-block-search anim d2">
+            <div class="vis-illustration vis-illustration-search">
+              <div class="search-mock">
+                <div class="sm-bar"><span>🔍</span>&nbsp;auto-école permis b</div>
+                <div class="sm-result sm-top">
+                  <span class="sm-pin">📍</span>
+                  <div><div class="sm-title">Fac Auto-École</div><div class="sm-meta">★ 4.8 · 226 avis · Ouvert</div></div>
+                </div>
+                <div class="sm-result sm-dim">Concurrent A</div>
+                <div class="sm-result sm-dim">Concurrent B</div>
+              </div>
+            </div>
+            <h3>🌐 Meilleure visibilité Google</h3>
+            <p>Référencement optimisé de votre fiche Google.</p>
+          </div>
+          <div class="vis-block vis-block-reviews anim d3">
+            <div class="vis-illustration vis-illustration-reviews">
+              <div class="review-mock">
+                <div class="rm-score">
+                  <span class="rm-num">4,9</span>
+                  <span class="rm-stars">★★★★★</span>
+                </div>
+                <div class="rm-avatars">
+                  <span class="rm-av rm-av1">LM</span>
+                  <span class="rm-av rm-av2">SB</span>
+                  <span class="rm-av rm-av3">TN</span>
+                </div>
+                <div class="rm-tag">+3× avis en 2 clics</div>
+              </div>
+            </div>
+            <h3>⭐ Meilleure notoriété</h3>
+            <p>Vos élèves laissent un avis en 2 clics.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    <a class="cue dark" data-target="s-affiliation">
+      <span class="cue-msg">Découvrir le contenu de l'offre</span>
+      <span class="cue-arrow">↓</span>
+    </a>
+  </section>
+
+  <!-- ================= SLIDE 3 — PROGRAMME D'AFFILIATION ================= -->
+  <section class="slide s-affiliation arg" id="s-affiliation" data-dark="1">
+    <div class="slide-body">
+      <div class="slide-inner">
+        <div class="arg-inner">
+          <div class="text">
+            <span class="arg-num anim">2 · Programme d'affiliation</span>
+            <h2 class="anim d1">Votre abonnement se rembourse tout seul.</h2>
+            <p class="lead anim d1">Ajoutez notre entraînement au Code à votre offre pour 30€. Chaque élève qui s'entraîne vous rapporte 60%. Dès le 4ème du mois, votre abonnement est remboursé.</p>
+            <div class="mini anim d2">
+              <div class="m"><b>60%</b><span>reversés sur chaque vente</span></div>
+              <div class="m"><b>4 élèves</b><span>pour être rentable</span></div>
+              <div class="m"><b>+180€</b><span>nets avec 10 élèves</span></div>
+            </div>
+          </div>
+          <div class="visual anim d2">
+            <div class="fresque">
+              <div class="fr-title">La fresque de vos revenus</div>
+              <div class="fr-track">
+                <div class="fr-node"><div class="fr-bubble">🎓</div><div class="fr-val">30€</div><div class="fr-lbl">L'élève s'entraîne au code via votre auto-école</div></div>
+                <div class="fr-node"><div class="fr-bubble">💰</div><div class="fr-val">18€</div><div class="fr-lbl">Vous touchez 60% de chaque vente</div></div>
+                <div class="fr-node"><div class="fr-bubble">📈</div><div class="fr-val">72€</div><div class="fr-lbl">Dès 4 élèves / mois → abonnement remboursé</div></div>
+              </div>
+              <div class="fr-result">🚀 Avec 10 élèves / mois → <strong>&nbsp;180€ de revenus nets supplémentaires</strong></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <a class="cue light" data-target="s-site">
+      <span class="cue-msg">Autres offres</span>
+      <span class="cue-arrow">↓</span>
+    </a>
+  </section>
+
+  <!-- ================= SLIDE 4 — CRÉATION DE SITE INTERNET ================= -->
+  <section class="slide s-site arg" id="s-site" data-dark="0">
+    <div class="slide-body">
+      <div class="slide-inner">
+        <div class="arg-inner">
+          <div class="text">
+            <span class="arg-num anim">3 · Site internet</span>
+            <h2 class="anim d1">Un site professionnel, sans lever le petit doigt.</h2>
+            <p class="lead anim d1">FlexiAuto crée pour vous un site internet moderne, rapide et optimisé pour Google.</p>
+            <span class="opt-tag anim d1">ⓘ Option — non incluse dans l'abonnement</span>
+            <div class="mini anim d2">
+              <div class="m"><b>Clé en main</b><span>conçu et publié pour vous</span></div>
+              <div class="m"><b>SEO</b><span>optimisé pour Google</span></div>
+              <div class="m"><b>Responsive</b><span>mobile & desktop</span></div>
+            </div>
+          </div>
+          <div class="visual anim d2">
+            <div class="site-mock">
+              <div class="browser-bar">
+                <span class="bdot"></span><span class="bdot"></span><span class="bdot"></span>
+                <div class="burl">🔒 facautoecole.fr</div>
+              </div>
+              <div class="sp-hero">
+                <div class="sp-logo">FAC AUTO-ÉCOLE</div>
+                <h4>Réussissez votre permis avec nous</h4>
+                <p>56% de réussite · ★ 4.8 · 226 avis</p>
+                <span class="sp-btn">S'inscrire</span>
+              </div>
+              <div class="sp-stats">
+                <div class="s"><b>56%</b><span>Réussite</span></div>
+                <div class="s"><b>★ 4.8</b><span>Note Google</span></div>
+                <div class="s"><b>B</b><span>Permis</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <a class="cue dark" data-target="s-avis">
+      <span class="cue-msg">Ce qu'en disent nos partenaires</span>
+      <span class="cue-arrow">↓</span>
+    </a>
+  </section>
+
+  <!-- ================= SLIDE 5 — AVIS CLIENTS ================= -->
+  <section class="slide s-avis" id="s-avis" data-dark="1">
+    <div class="slide-body">
+      <div class="slide-inner">
+        <div class="head anim">
+          <span class="arg-num">4 · Avis</span>
+          <span class="eyebrow">Ils nous font confiance</span>
+          <h2>Rejoignez des centaines de gérants convaincus</h2>
+          <p>Des auto-écoles partout en France développent leur activité avec FlexiAuto.</p>
+        </div>
+        <div class="stat-row anim d1">
+          <div class="stat"><div class="n">+400</div><div class="k">auto-écoles partenaires</div></div>
+          <div class="stat"><div class="n">★ 4,9</div><div class="k">note moyenne Google</div></div>
+          <div class="stat"><div class="n">+180€</div><div class="k">revenus nets / mois</div></div>
+          <div class="stat"><div class="n">30 j</div><div class="k">pour être rentable</div></div>
+        </div>
+        <div class="tmt-grid anim d2">
+          <div class="tmt">
+            <div class="stars">★★★★★</div>
+            <blockquote>Grâce à FlexiAuto, j'ai rentabilisé mon abonnement dès le premier mois. Mes élèves adorent l'entraînement au code intégré.</blockquote>
+            <div class="who"><div class="avatar">MD</div><div><div class="nm">Marie D.</div><div class="rl">Auto-école · Marseille</div></div></div>
+          </div>
+          <div class="tmt">
+            <div class="stars">★★★★★</div>
+            <blockquote>La visibilité prioritaire m'a apporté une dizaine de nouveaux inscrits en deux mois. Le site inclus est un vrai plus.</blockquote>
+            <div class="who"><div class="avatar">KR</div><div><div class="nm">Karim R.</div><div class="rl">Auto-école · Lyon</div></div></div>
+          </div>
+          <div class="tmt">
+            <div class="stars">★★★★★</div>
+            <blockquote>Les avis Google se collectent tout seuls après chaque permis. On est passés de 40 à plus de 200 avis en un an.</blockquote>
+            <div class="who"><div class="avatar">EL</div><div><div class="nm">Élodie L.</div><div class="rl">Auto-école · Nantes</div></div></div>
+          </div>
+        </div>
+        <div class="social-cta anim d3">
+          <a href="inscription-partenaire.html?duree=trimestre" class="btn-lg btn-glow" id="cta-partner-final">Devenir partenaire FlexiAuto →</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <script>
+    (function(){
+      if(localStorage.getItem('cdr-partenaire-closed') === 'true'){
+        var banner = document.getElementById('cdr-partenaire-banner');
+        if(banner) banner.style.display = 'none';
+      }
+    })();
+
+    // Sélecteur de durée d'engagement — carte tarif du héro. Le prix affiché
+    // suit la durée choisie (49,99€ / 46,99€ / 44,99€ par mois), et les CTA
+    // "Devenir partenaire" transmettent cette durée à inscription-partenaire.html.
+    (function(){
+      var buttons = Array.prototype.slice.call(document.querySelectorAll('.dur-btn'));
+      var val = document.getElementById('price-val');
+      var sub = document.getElementById('price-sub');
+      var monthsToDuree = {4:'trimestre', 6:'semestre', 12:'annuel'};
+      var ctas = [document.getElementById('cta-partner-hero'), document.getElementById('cta-partner-final')];
+
+      function syncCtas(duree){
+        ctas.forEach(function(cta){
+          if (cta) cta.href = 'inscription-partenaire.html?duree=' + duree;
+        });
+      }
+
+      buttons.forEach(function(btn){
+        btn.addEventListener('click', function(){
+          buttons.forEach(function(b){ b.classList.remove('active'); });
+          btn.classList.add('active');
+          var price = parseFloat(btn.dataset.price).toFixed(2).replace('.', ',');
+          val.textContent = price + '€';
+          sub.textContent = 'Engagement de ' + btn.dataset.months + ' mois, résiliable à l\'échéance.';
+          syncCtas(monthsToDuree[btn.dataset.months] || 'trimestre');
+        });
+      });
+    })();
+
+    (function(){
+      var ids = ['s-hero','s-visibilite','s-affiliation','s-site','s-avis'];
+      var sections = ids.map(function(id){ return document.getElementById(id); });
+      var steps = Array.prototype.slice.call(document.querySelectorAll('.elevator .estep'));
+      var elevator = document.getElementById('elevator');
+      var backTop = document.getElementById('backTop');
+      var current = 0;
+
+      function goTo(i){
+        i = Math.max(0, Math.min(sections.length - 1, i));
+        sections[i].scrollIntoView({behavior:'smooth', block:'start'});
+      }
+
+      // Bouton "remonter en haut" — visible seulement hors section 1
+      backTop.addEventListener('click', function(){ goTo(0); });
+
+      // Clics : ascenseur + flèches d'annonce
+      document.querySelectorAll('[data-target]').forEach(function(el){
+        el.addEventListener('click', function(e){
+          e.preventDefault();
+          var t = document.getElementById(el.getAttribute('data-target'));
+          if(t) t.scrollIntoView({behavior:'smooth', block:'start'});
+        });
+      });
+
+      // Navigation clavier (flèches / Page)
+      window.addEventListener('keydown', function(e){
+        if(['ArrowDown','PageDown'].indexOf(e.key) > -1){ e.preventDefault(); goTo(current + 1); }
+        else if(['ArrowUp','PageUp'].indexOf(e.key) > -1){ e.preventDefault(); goTo(current - 1); }
+        else if(e.key === 'Home'){ e.preventDefault(); goTo(0); }
+        else if(e.key === 'End'){ e.preventDefault(); goTo(sections.length - 1); }
+      });
+
+      // Observer : section active → anim d'entrée + état ascenseur
+      var io = new IntersectionObserver(function(entries){
+        entries.forEach(function(en){
+          if(en.isIntersecting && en.intersectionRatio >= 0.55){
+            en.target.classList.add('in');
+            var idx = ids.indexOf(en.target.id);
+            if(idx > -1){
+              current = idx;
+              steps.forEach(function(s, k){
+                s.classList.toggle('active', k === idx);
+                s.classList.toggle('done', k < idx);
+              });
+              elevator.classList.toggle('on-dark', en.target.getAttribute('data-dark') === '1');
+              backTop.classList.toggle('visible', idx > 0);
+            }
+          }
+        });
+      }, {threshold:[0.55]});
+      sections.forEach(function(s){ io.observe(s); });
+
+      // État initial
+      sections[0].classList.add('in');
+      steps[0].classList.add('active');
+    })();
+  </script>
+
+</body>
+</html>

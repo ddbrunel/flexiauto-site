@@ -46,7 +46,7 @@ Pattern important : `#page-home` et `#page-carte` ont `pointer-events:none` sur 
 | `.search-wrap#sw` | Conteneur de la recherche topbar |
 | `input#si` | Champ de recherche (placeholder "Ville, auto-école, code postal...") |
 | `.search-dd#sdd` | Dropdown de résultats (écoles locales + lieux géocodés Nominatim) |
-| `.h-nav` | Conteneur droit : `.h-btn-info` ("En savoir plus" → `savoir-plus.html`), `.h-btn.primary` ("Se connecter" → `https://flexi-app-peach.vercel.app/login`, redirection externe, pas de modal locale) |
+| `.h-nav` | Conteneur droit : `.h-btn-info` ("En savoir plus" → `nos-offres.html`), `.h-btn.primary` ("Se connecter" → `https://flexi-app-peach.vercel.app/login`, redirection externe, pas de modal locale) |
 
 ### 1.3 Bandeaux "Code de la route" (`.cdr-banner`)
 
@@ -57,7 +57,7 @@ Composant partagé (même classes CSS) instancié 2 fois dans `index.html`, posi
 | `#cdr-home-banner` | `#page-home` | "📚 Code de la route · Questions officielles" | "Essai gratuit →" | `cdr-home-closed` |
 | `#cdr-carte-banner` | `#page-carte` | "🎯 Code de la route — Questions officielles · Moins cher que la concurrence" | "Essayer gratuit" | `cdr-carte-closed` |
 
-Le clic sur le bouton fait toujours `alert('Code de la route — bientôt disponible !')` (fonctionnalité non développée). `savoir-plus.html` a une 3ᵉ instance indépendante (`#cdr-savoir-banner` / `cdr-savoir-closed`, script séparé, voir §7).
+Le clic sur le bouton fait toujours `alert('Code de la route — bientôt disponible !')` (fonctionnalité non développée). `nos-offres.html` a une 3ᵉ instance indépendante (`#cdr-savoir-banner` / `cdr-savoir-closed`, script séparé, voir §7).
 
 ### 1.4 Page d'accueil (`#page-home`)
 
@@ -389,7 +389,7 @@ Le fichier contient un second bloc de règles CSS (commentaire `/* RELOOK PRINTE
 
 ## 7. Pages annexes
 
-### 7.1 `savoir-plus.html`
+### 7.1 `nos-offres.html`
 
 Page statique indépendante (pas de SPA, pas de Supabase, pas de carte). Structure : bandeau `.cdr-banner#cdr-savoir-banner` sous une topbar minimale (`#header` simplifié : logo → `index.html`, "En savoir plus" → self, "Se connecter" → URL externe), hero sombre (dégradé `#0F172A`→`#1E3A5F`, badge, titre à accent bleu `#60A5FA`), puis 2 colonnes ("Pour les élèves" / "Pour les auto-écoles") listant 4 arguments chacune avec un bouton CTA :
 - Colonne élèves → `window.location.href='index.html?go=carte'` (le paramètre `?go=carte` est lu par `bootMap()` dans `index.html` pour ouvrir directement la page carte).
@@ -399,7 +399,7 @@ Script local : gestion du bandeau (`dismissCdrBanner()`, clé `cdr-savoir-closed
 
 ### 7.2 `site-inexistant.html`
 
-Page statique minimale affichée quand `window.visitWebsite(url)` est appelée avec une URL vide (école sans site web). Contient la même topbar minimale que les autres pages annexes (logo, "En savoir plus", "Se connecter") et un message "Ce site internet n'existe pas encore" + bouton retour (`href="index.html"`). **Utilise encore l'ancien pattern de bandeau** (`.topbanner` positionné au-dessus du header, classes `topbanner`/`topbanner-cta`/`topbanner-close`, clé localStorage `fa_topbanner_dismissed`) — non aligné avec le pattern `.cdr-banner` actuel d'`index.html`/`savoir-plus.html` (écart volontaire, hors périmètre des dernières tâches de restructuration des bandeaux).
+Page statique minimale affichée quand `window.visitWebsite(url)` est appelée avec une URL vide (école sans site web). Contient la même topbar minimale que les autres pages annexes (logo, "En savoir plus", "Se connecter") et un message "Ce site internet n'existe pas encore" + bouton retour (`href="index.html"`). **Utilise encore l'ancien pattern de bandeau** (`.topbanner` positionné au-dessus du header, classes `topbanner`/`topbanner-cta`/`topbanner-close`, clé localStorage `fa_topbanner_dismissed`) — non aligné avec le pattern `.cdr-banner` actuel d'`index.html`/`nos-offres.html` (écart volontaire, hors périmètre des dernières tâches de restructuration des bandeaux).
 
 ### 7.3 `inscription.html`
 

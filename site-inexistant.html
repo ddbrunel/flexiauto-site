@@ -14,9 +14,8 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
 .topbanner-close{position:absolute;right:16px;top:50%;transform:translateY(-50%);width:16px;height:16px;border-radius:50%;background:rgba(255,255,255,0.15);display:flex;align-items:center;justify-content:center;font-size:10px;line-height:1;color:#fff;cursor:pointer}
 .topbanner-close:hover{background:rgba(255,255,255,0.28)}
 #header{height:62px;padding:0 28px;display:flex;align-items:center;gap:9px;border-bottom:1px solid #F0F2F5}
-.logo{display:flex;align-items:center;gap:9px;font-weight:600;font-size:19px;color:#0F172A;text-decoration:none}
-.logo-icon{width:28px;height:28px;background:#1B4FD8;border-radius:7px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
-.logo-icon svg{width:15px;height:15px;fill:#fff}
+.logo{display:flex;align-items:center;text-decoration:none}
+.logo-img{height:38px;width:auto;display:block}
 .h-btn-info{display:flex;align-items:center;gap:4px;height:34px;padding:0 12px;border-radius:8px;font-size:13px;color:#374151;background:transparent;border:none;cursor:pointer;font-family:'Inter',sans-serif}
 .h-btn-info:hover{background:rgba(0,0,0,0.05)}
 .h-btn-info .chevron{font-size:10px;color:#9ca3af}
@@ -39,12 +38,11 @@ main{flex:1;display:flex;align-items:center;justify-content:center;padding:24px}
 </div>
 <div id="header">
   <a class="logo" href="index.html">
-    <div class="logo-icon"><svg viewBox="0 0 24 24"><path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 16c-.83 0-1.5-.67-1.5-1.5S5.67 13 6.5 13s1.5.67 1.5 1.5S7.33 16 6.5 16zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM5 11l1.5-4.5h11L19 11H5z"/></svg></div>
-    FlexiAuto
+    <img src="logo-flexiauto.png" alt="FlexiAuto" class="logo-img">
   </a>
   <div style="flex:1"></div>
-  <button class="h-btn-info" onclick="window.location.href='savoir-plus.html'">En savoir plus <span class="chevron">▾</span></button>
-  <button class="btn-connect" onclick="window.location.href='https://flexi-app-peach.vercel.app/login'">Se connecter</button>
+  <button class="h-btn-info" onclick="window.location.href='nos-offres.html'">Nos offres <span class="chevron">▾</span></button>
+  <button class="btn-connect" onclick="window.location.href='connexion.html'">Se connecter</button>
 </div>
 <main>
   <div class="msg">

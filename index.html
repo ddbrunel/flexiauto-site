@@ -6,9 +6,9 @@
 <title>FlexiAuto — Comparez les auto-écoles en France</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.47.0/tabler-icons.min.css">
-<script src="https://cdn.jsdelivr.net/npm/supercluster@8.0.1/dist/supercluster.min.js"></script>
 <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDtFgUhoQoVISlysDWgGsFUep9b7b7Yc5c&libraries=marker&language=fr&region=FR&loading=async" defer></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@turf/turf@7/turf.min.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 :root{
@@ -55,7 +55,12 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);fon
 /* ══════════════════════════════════════
    MAP
 ══════════════════════════════════════ */
-#map{position:fixed;inset:0;width:100%;height:100vh;height:100dvh;z-index:0;background:#dff2fb}
+#map{position:fixed;inset:0;width:100%;height:100vh;height:100dvh;z-index:0;background:#dff2fb;cursor:grab}
+#map.map-dragging{cursor:grabbing}
+/* Google Maps applique par défaut son propre curseur "main" (openhand.cur) sur
+   les images de marker — !important nécessaire pour l'emporter sur cette règle
+   interne et garder pointer sur tout marker/hub (§ point 4). */
+#map img[src^="data:image/svg+xml"]{cursor:pointer!important}
 body::before{content:"";position:fixed;inset:0;z-index:1;pointer-events:none;background:linear-gradient(90deg,rgba(244,251,255,.78) 0%,rgba(244,251,255,.38) 28%,rgba(255,255,255,.10) 58%,rgba(255,255,255,0) 100%)}
 .gm-style .gm-style-iw-c{border-radius:14px!important;padding:0!important;background:transparent!important;box-shadow:none!important}
 .gm-style .gm-style-iw-d{overflow:visible!important;padding:0!important}
@@ -67,26 +72,21 @@ body::before{content:"";position:fixed;inset:0;z-index:1;pointer-events:none;bac
 /* ══════════════════════════════════════
    HEADER
 ══════════════════════════════════════ */
-.topbar-wrap{position:fixed;top:0;left:0;right:0;z-index:900}
+.topbar-wrap{position:fixed;top:var(--chrome-height);left:0;right:0;z-index:900}
 #header{
   padding:0 28px;height:62px;
   display:flex;align-items:center;gap:18px;
   background:linear-gradient(180deg,rgba(5,7,10,0.95) 0%,transparent 100%);
 }
-.logo{font-family:'Inter',sans-serif;font-weight:800;font-size:21px;display:flex;align-items:center;gap:9px;flex-shrink:0;cursor:pointer;color:var(--text);text-decoration:none}
-.logo-icon{width:28px;height:28px;background:linear-gradient(135deg,var(--emerald),var(--blue));border-radius:7px;display:flex;align-items:center;justify-content:center;box-shadow:0 0 22px rgba(111,191,115,0.38)}
-.logo-icon svg{width:15px;height:15px;fill:white}
+.logo{display:flex;align-items:center;flex-shrink:0;cursor:pointer;text-decoration:none}
+.logo-img{height:38px;width:auto;display:block}
 .search-wrap{flex:1;max-width:400px;position:relative}
 .search-wrap input{width:100%;padding:10px 16px 10px 40px;background:rgba(9,18,22,0.7);border:1px solid var(--border);border-radius:100px;color:var(--text);font-family:'Inter',sans-serif;font-size:13px;outline:none;transition:all .2s}
 .search-wrap input::placeholder{color:var(--muted2)}
 .search-wrap input:focus{border-color:var(--border-blue);background:rgba(9,18,22,0.95)}
 .search-icon{position:absolute;left:14px;top:50%;transform:translateY(-50%);pointer-events:none}
 .search-icon svg{width:15px;height:15px;stroke:var(--muted2);fill:none;stroke-width:2}
-.search-dd{position:absolute;top:calc(100% + 8px);left:0;right:0;background:var(--surface);border:1px solid var(--border);border-radius:14px;display:none;z-index:1000;overflow:hidden}
-.s-item{padding:10px 14px;cursor:pointer;display:flex;align-items:center;gap:10px;font-size:13px;border-bottom:1px solid var(--border);transition:background .15s}
-.s-item:last-child{border-bottom:none}
-.s-item:hover{background:rgba(25,118,210,0.12)}
-.s-city{margin-left:auto;font-size:11px;color:var(--muted2);background:rgba(255,255,255,0.05);padding:2px 8px;border-radius:20px}
+.search-msg{position:absolute;top:calc(100% + 8px);left:0;right:0;text-align:center;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:7px 12px;font-size:12px;color:var(--muted2);display:none;z-index:1000}
 .h-nav{display:flex;align-items:center;gap:10px;margin-left:auto}
 .h-btn{padding:9px 20px;border-radius:100px;font-size:13px;font-weight:500;cursor:pointer;font-family:'Inter',sans-serif;transition:all .2s;background:rgba(255,255,255,0.05);color:var(--muted2);border:1px solid var(--border)}
 .h-btn:hover{border-color:var(--border-blue);color:var(--text);background:rgba(25,118,210,0.1)}
@@ -99,7 +99,7 @@ body::before{content:"";position:fixed;inset:0;z-index:1;pointer-events:none;bac
 /* ══════════════════════════════════════
    BANDEAU "CODE DE LA ROUTE" (par page, sous la topbar)
 ══════════════════════════════════════ */
-.cdr-banner{position:fixed;left:0;right:0;top:var(--chrome-height);z-index:150;background:#1B4FD8;padding:7px 16px;display:flex;align-items:center;justify-content:center;gap:10px;color:#fff;font-size:12px;font-family:'Inter',sans-serif;pointer-events:auto}
+.cdr-banner{position:fixed;left:0;right:0;top:0;z-index:960;background:#1B4FD8;padding:7px 16px;display:flex;align-items:center;justify-content:center;gap:10px;color:#fff;font-size:12px;font-family:'Inter',sans-serif;pointer-events:auto}
 .cdr-banner-cta{background:rgba(255,255,255,0.9);color:#1B4FD8;border:none;border-radius:12px;padding:3px 12px;font-size:11px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;white-space:nowrap}
 .cdr-banner-cta:hover{background:#fff}
 .cdr-banner-close{position:absolute;right:16px;top:50%;transform:translateY(-50%);width:18px;height:18px;border-radius:50%;background:rgba(255,255,255,0.15);display:flex;align-items:center;justify-content:center;font-size:10px;line-height:1;color:#fff;cursor:pointer;flex-shrink:0}
@@ -135,6 +135,8 @@ body::before{content:"";position:fixed;inset:0;z-index:1;pointer-events:none;bac
 /* SIDEBAR */
 .sidebar{position:absolute;left:16px;top:calc(var(--carte-chrome-height) + 12px);bottom:16px;width:310px;z-index:100;display:flex;flex-direction:column;gap:8px;overflow:hidden;pointer-events:auto}
 .sidebar-head{background:var(--surface);border:1px solid var(--border-blue);border-radius:16px;padding:14px;flex-shrink:0;position:sticky;top:0;z-index:100}
+
+/* Recherche interne sidebar */
 .sidebar-search{position:relative;margin-bottom:10px}
 .sidebar-search input{width:100%;padding:9px 14px 9px 36px;background:rgba(25,118,210,0.08);border:1px solid rgba(25,118,210,0.25);border-radius:9px;color:var(--text);font-family:'Inter',sans-serif;font-size:13px;outline:none;transition:all .2s}
 .sidebar-search input::placeholder{color:rgba(25,118,210,0.4)}
@@ -142,19 +144,11 @@ body::before{content:"";position:fixed;inset:0;z-index:1;pointer-events:none;bac
 .sidebar-search-icon{position:absolute;left:10px;top:50%;transform:translateY(-50%);pointer-events:none}
 .sidebar-search-icon svg{width:14px;height:14px;stroke:rgba(25,118,210,0.55);fill:none;stroke-width:2}
 
-/* Trier + type permis */
+/* Trier + permis */
 .filter-row{display:flex;gap:7px;margin-bottom:8px}
-.f-select{flex:1;padding:7px 24px 7px 9px;background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:8px;color:var(--text2);font-family:'Inter',sans-serif;font-size:12px;outline:none;cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='11' height='11' viewBox='0 0 24 24' fill='none' stroke='%237f918b' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 7px center;transition:border-color .2s}
+.f-select{flex:1;min-width:0;padding:7px 22px 7px 8px;background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:8px;color:var(--text2);font-family:'Inter',sans-serif;font-size:11px;outline:none;cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='11' height='11' viewBox='0 0 24 24' fill='none' stroke='%237f918b' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 6px center;transition:border-color .2s;text-overflow:ellipsis}
 .f-select:hover,.f-select:focus{border-color:var(--border-blue)}
 .f-select option{background:#091216;color:var(--text)}
-
-/* Rayon géographique */
-.radius-row{margin-bottom:8px}
-.radius-label{display:flex;justify-content:space-between;align-items:center;font-size:11px;color:var(--muted2);margin-bottom:5px}
-.radius-label span{color:var(--blue-lt);font-weight:600}
-.radius-slider{width:100%;height:4px;border-radius:2px;appearance:none;background:linear-gradient(to right,var(--blue) 0%,var(--blue) 50%,rgba(255,255,255,0.12) 50%,rgba(255,255,255,0.12) 100%);cursor:pointer;outline:none}
-.radius-slider::-webkit-slider-thumb{appearance:none;width:16px;height:16px;border-radius:50%;background:white;border:3px solid var(--blue);box-shadow:0 1px 6px rgba(0,0,0,0.4)}
-.radius-slider::-moz-range-thumb{width:14px;height:14px;border-radius:50%;background:white;border:3px solid var(--blue)}
 
 /* Toggle vue */
 .view-toggle{display:flex;border:1px solid var(--border);border-radius:8px;overflow:hidden;flex-shrink:0}
@@ -162,6 +156,14 @@ body::before{content:"";position:fixed;inset:0;z-index:1;pointer-events:none;bac
 .vt-btn svg{width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2}
 .vt-btn.on{background:rgba(25,118,210,0.2);color:var(--blue-lt)}
 .vt-btn:hover:not(.on){background:rgba(255,255,255,0.04);color:var(--text)}
+
+/* Rayon géographique */
+.radius-row{margin-bottom:8px}
+.radius-label{display:flex;justify-content:space-between;align-items:center;font-size:11px;color:var(--muted2);margin-bottom:5px}
+.radius-label span{color:var(--blue-lt);font-weight:600}
+.radius-slider{width:100%;height:4px;border-radius:2px;appearance:none;background:linear-gradient(to right,#1B4FD8 0%,#E2E8F0 0%);cursor:pointer;outline:none}
+.radius-slider::-webkit-slider-thumb{appearance:none;width:16px;height:16px;border-radius:50%;background:white;border:3px solid #1B4FD8;box-shadow:0 1px 6px rgba(0,0,0,0.4)}
+.radius-slider::-moz-range-thumb{width:14px;height:14px;border-radius:50%;background:white;border:3px solid #1B4FD8}
 
 .sidebar-foot{display:flex;align-items:center;justify-content:space-between;margin-top:10px}
 .sidebar-count{font-size:11px;color:var(--muted2)}
@@ -171,8 +173,8 @@ body::before{content:"";position:fixed;inset:0;z-index:1;pointer-events:none;bac
 .sidebar-list::-webkit-scrollbar{width:3px}
 .sidebar-list::-webkit-scrollbar-thumb{background:var(--border-blue);border-radius:3px}
 .sidebar-limit-notice{flex-shrink:0;margin-top:8px;padding:8px 10px;background:var(--bg3);border:1px solid var(--border);border-radius:10px;color:var(--muted2);font-size:11px;text-align:center;line-height:1.4}
-.sidebar-loading{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:40px 20px;color:var(--muted2);font-size:13px;text-align:center}
-.sidebar-spinner{width:26px;height:26px;border-radius:50%;border:3px solid var(--border-blue);border-top-color:var(--blue);animation:sidebar-spin .7s linear infinite}
+.sidebar-loading{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:40px 20px;color:#64748B;font-size:13px;text-align:center}
+.sidebar-spinner{width:26px;height:26px;border-radius:50%;border:3px solid var(--border-blue);border-top-color:#1B4FD8;animation:sidebar-spin .7s linear infinite}
 @keyframes sidebar-spin{to{transform:rotate(360deg)}}
 @media (prefers-reduced-motion:reduce){.sidebar-spinner{animation:none;border-top-color:var(--border-blue)}}
 
@@ -332,15 +334,62 @@ body::before{content:"";position:fixed;inset:0;z-index:1;pointer-events:none;bac
 .login-hint{text-align:center;font-size:12px;color:var(--muted2);margin-top:16px;line-height:1.6}
 
 /* ══════════════════════════════════════
+   GÉOLOCALISATION — modal non-contournable (§3)
+══════════════════════════════════════ */
+#geoloc-modal{position:fixed;inset:0;z-index:850;display:flex;align-items:center;justify-content:center}
+.geoloc-overlay{position:absolute;inset:0;background:rgba(15,23,42,0.6)}
+.geoloc-card{position:relative;z-index:1;background:#fff;border-radius:16px;padding:32px;max-width:380px;width:90vw;box-shadow:0 24px 70px rgba(31,86,125,.18);text-align:center}
+.geoloc-icon-wrap{width:100px;height:100px;border-radius:50%;background:#EEF3FF;display:flex;align-items:center;justify-content:center;margin:0 auto 20px}
+.geoloc-icon{font-size:56px;line-height:1}
+.geoloc-title{font-size:18px;font-weight:600;color:var(--text);margin-bottom:10px;font-family:'Inter',sans-serif}
+.geoloc-sub{font-size:13px;color:#64748B;line-height:1.5;margin-bottom:24px}
+.geoloc-instructions{font-size:13px;color:var(--text2);line-height:1.6;background:var(--bg3);border-radius:10px;padding:14px;margin-bottom:20px;text-align:left}
+.geoloc-btn{width:100%;height:44px;background:#1B4FD8;color:#fff;border:none;border-radius:10px;font-family:'Inter',sans-serif;font-size:14px;font-weight:600;cursor:pointer;transition:background .15s}
+.geoloc-btn:hover{background:#1640b0}
+/* La carte reste visible mais floutée derrière la modal, tant qu'elle est
+   affichée — filter:blur (pas backdrop-filter : ce n'est pas le glassmorphism
+   d'un panneau flottant, mais une carte elle-même rendue floue). */
+#map.geoloc-blur{filter:blur(4px)}
+
+/* ============ OVERLAY D'INSCRIPTION ÉLÈVE (?inscription=eleve) ============
+   Contrairement à la géoloc, celle-ci est contournable (croix de fermeture) :
+   l'utilisateur peut explorer la carte librement sans créer de compte. */
+#eleve-signup-overlay{position:fixed;inset:0;z-index:870;display:none;align-items:center;justify-content:center}
+.esu-veil{position:absolute;inset:0;background:rgba(15,23,42,0.45)}
+.esu-card{position:relative;z-index:1;background:#fff;border-radius:16px;max-width:400px;width:90vw;padding:32px;
+  box-shadow:0 24px 70px rgba(31,86,125,.18);font-family:'Inter',sans-serif;}
+.esu-close{position:absolute;top:14px;right:16px;background:transparent;border:none;color:#94A3B8;font-size:20px;cursor:pointer;transition:color .15s}
+.esu-close:hover{color:#334155}
+.esu-card h2{font-size:19px;font-weight:800;letter-spacing:-0.02em;color:#17324d;text-align:center}
+.esu-sub{font-size:13px;color:#5f7588;margin-top:6px;text-align:center}
+.esu-google{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;height:44px;
+  border-radius:100px;border:1px solid #DADCE0;background:#fff;color:#3c4043;font-family:'Inter',sans-serif;
+  font-size:14px;font-weight:600;cursor:pointer;transition:box-shadow .15s;margin-top:20px}
+.esu-google:hover{box-shadow:0 2px 8px rgba(0,0,0,.12)}
+.esu-google svg{width:18px;height:18px}
+.esu-sep{display:flex;align-items:center;gap:12px;margin:16px 0;font-size:12px;color:#94A3B8}
+.esu-sep::before,.esu-sep::after{content:"";flex:1;height:1px;background:#E7ECF7}
+.esu-field{display:flex;flex-direction:column;gap:6px;margin-bottom:14px}
+.esu-field label{font-size:12.5px;font-weight:700;color:#374151}
+.esu-field input{height:42px;padding:0 14px;border-radius:10px;border:1px solid rgba(25,118,210,.16);
+  font-family:'Inter',sans-serif;font-size:14px;color:#17324d;background:#fff;width:100%;
+  transition:border-color .15s,box-shadow .15s}
+.esu-field input:focus{outline:none;border-color:#1976d2;box-shadow:0 0 0 4px rgba(25,118,210,.1)}
+.esu-submit{width:100%;height:44px;border-radius:100px;border:none;cursor:pointer;
+  background:linear-gradient(135deg,#1976d2,#0d5fb3);color:#fff;font-family:'Inter',sans-serif;
+  font-size:14px;font-weight:700;box-shadow:0 10px 24px rgba(25,118,210,.25);
+  transition:filter .15s,transform .15s;margin-top:4px}
+.esu-submit:hover{filter:brightness(1.05);transform:translateY(-1px)}
+.esu-submit:disabled{opacity:.6;cursor:not-allowed;transform:none;filter:none}
+.esu-msg{margin-top:14px;padding:11px 14px;border-radius:10px;font-size:13px;font-weight:600;display:none;text-align:center}
+.esu-msg.error{display:block;background:#FEECEC;color:#B91C1C;border:1px solid #F8CACA}
+.esu-msg.success{display:block;background:#E6F7EC;color:#15803D;border:1px solid #BBEBCB}
+
+/* ══════════════════════════════════════
    RELOOK PRINTEMPS CLAIR
 ══════════════════════════════════════ */
 #header{
   background:linear-gradient(180deg,rgba(244,251,255,.96) 0%,rgba(244,251,255,.78) 64%,rgba(244,251,255,0) 100%);
-}
-.logo{color:var(--text)}
-.logo-icon{
-  background:linear-gradient(135deg,var(--blue),var(--emerald));
-  box-shadow:0 10px 24px rgba(25,118,210,.22);
 }
 .search-wrap input,.sidebar-search input,.field input{
   background:rgba(255,255,255,.92);
@@ -353,7 +402,7 @@ body::before{content:"";position:fixed;inset:0;z-index:1;pointer-events:none;bac
   border-color:rgba(25,118,210,.46);
   box-shadow:0 0 0 4px rgba(25,118,210,.10);
 }
-.search-dd,.sidebar-head,.s-card,.login-card{
+.sidebar-head,.s-card,.login-card{
   background:rgba(255,255,255,.90);
   border-color:rgba(25,118,210,.16);
   box-shadow:var(--shadow);
@@ -429,7 +478,7 @@ body::before{content:"";position:fixed;inset:0;z-index:1;pointer-events:none;bac
   background:rgba(255,255,255,.72);
   border-color:rgba(25,118,210,.12);
 }
-.score-bar-wrap,.radius-slider{
+.score-bar-wrap{
   background:rgba(25,118,210,.12);
 }
 .score-bar{
@@ -563,17 +612,16 @@ body::before{content:"";position:fixed;inset:0;z-index:1;pointer-events:none;bac
 <div class="topbar-wrap">
   <div id="header">
     <a class="logo" onclick="showHome()">
-      <div class="logo-icon"><svg viewBox="0 0 24 24"><path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 16c-.83 0-1.5-.67-1.5-1.5S5.67 13 6.5 13s1.5.67 1.5 1.5S7.33 16 6.5 16zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM5 11l1.5-4.5h11L19 11H5z"/></svg></div>
-      FlexiAuto
+      <img src="logo-flexiauto.png" alt="FlexiAuto" class="logo-img">
     </a>
     <div class="search-wrap" id="sw">
       <span class="search-icon"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg></span>
-      <input type="text" id="si" placeholder="Ville, auto-école, code postal...">
-      <div class="search-dd" id="sdd"></div>
+      <input type="text" id="si" placeholder="Ville (appuyez sur Entrée)...">
+      <div class="search-msg" id="search-msg"></div>
     </div>
     <div class="h-nav">
-      <button class="h-btn-info" onclick="window.location.href='savoir-plus.html'">En savoir plus <span class="chevron">▾</span></button>
-      <button class="h-btn primary" onclick="window.location.href='https://flexi-app-peach.vercel.app/login'">Se connecter</button>
+      <button class="h-btn-info" onclick="window.location.href='nos-offres.html'">Nos offres <span class="chevron">▾</span></button>
+      <button class="h-btn primary" onclick="window.location.href='connexion.html'">Se connecter</button>
     </div>
   </div>
 </div>
@@ -591,7 +639,7 @@ body::before{content:"";position:fixed;inset:0;z-index:1;pointer-events:none;bac
     <p class="hero-sub">Comparez les auto-écoles près de chez vous.<br>Notes, taux de réussite, tarifs — tout en un.</p>
     <div class="hero-btns">
       <button class="btn-main accent" onclick="showCarte()">Rechercher une auto-école</button>
-      <button class="btn-main" onclick="window.location.href='https://flexi-app-peach.vercel.app/login'">Se connecter à mon espace</button>
+      <button class="btn-main" onclick="window.location.href='connexion.html'">Se connecter à mon espace</button>
     </div>
     <div class="hero-stats">
       <div><div class="h-stat-n">89%</div><div class="h-stat-l">Taux réussite moyen</div></div>
@@ -633,17 +681,15 @@ body::before{content:"";position:fixed;inset:0;z-index:1;pointer-events:none;bac
       <div class="filter-row">
         <select class="f-select" id="sort-select" onchange="setSort(this.value)">
           <option value="all">Trier par défaut</option>
-          <option value="score">Score FlexiAuto</option>
-          <option value="rating">Mieux notées</option>
-          <option value="success">Taux de réussite</option>
-          <option value="price">Prix croissant</option>
-          <option value="slots">Places dispo</option>
+          <option value="rating">Avis Google</option>
+          <option value="success">Réussite à l'examen</option>
         </select>
         <select class="f-select" id="permit-select" onchange="setPermit(this.value)" style="max-width:90px">
-          <option value="all">Permis</option>
-          <option value="B">Permis B</option>
-          <option value="AAC">AAC</option>
-          <option value="Moto">Moto</option>
+          <option value="all">Tous les permis</option>
+          <option value="B" selected>Permis B</option>
+          <option value="A">Permis A (moto)</option>
+          <option value="AM">Permis AM (scooter)</option>
+          <option value="code">Code en ligne</option>
         </select>
         <div class="view-toggle">
           <button class="vt-btn on" id="vt-card" onclick="setView('card',this)" title="Cards">
@@ -654,19 +700,19 @@ body::before{content:"";position:fixed;inset:0;z-index:1;pointer-events:none;bac
           </button>
         </div>
       </div>
-      <div class="radius-row">
+      <div class="radius-row" id="radius-row">
         <div class="radius-label">
           <span style="color:var(--muted2);font-weight:400">Rayon géographique</span>
-          <span id="radius-val">National</span>
+          <span id="radius-val">20km</span>
         </div>
-        <input type="range" class="radius-slider" id="radius-slider" min="0" max="5" value="0" step="1">
+        <input type="range" class="radius-slider" id="radius-slider" min="1" max="50" value="20" step="1">
       </div>
       <div class="sidebar-foot">
         <div class="sidebar-count" id="sidebar-count">Chargement...</div>
       </div>
     </div>
     <div class="sidebar-list" id="sidebar-list"></div>
-    <div class="sidebar-limit-notice" id="sidebar-limit-notice" style="display:none">Vue limitée à 300 résultats — zoomez pour voir plus</div>
+    <div class="sidebar-limit-notice" id="sidebar-limit-notice" style="display:none">Vue limitée à 300 résultats les mieux notées dans ce secteur</div>
   </div>
 </div>
 
@@ -689,8 +735,7 @@ body::before{content:"";position:fixed;inset:0;z-index:1;pointer-events:none;bac
     <button class="login-x" onclick="closeLogin()">✕</button>
     <button class="login-home-btn" onclick="window.location.href='index.html'">← Accueil</button>
     <div class="login-logo">
-      <div class="logo-icon" style="width:24px;height:24px;border-radius:6px"><svg viewBox="0 0 24 24" style="width:13px;height:13px"><path fill="white" d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 16c-.83 0-1.5-.67-1.5-1.5S5.67 13 6.5 13s1.5.67 1.5 1.5S7.33 16 6.5 16zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM5 11l1.5-4.5h11L19 11H5z"/></svg></div>
-      FlexiAuto
+      <img src="logo-flexiauto.png" alt="FlexiAuto" style="height:28px;width:auto;display:block">
     </div>
     <p class="login-sub">Espace élève — Connexion</p>
     <div class="field"><label>Email ou identifiant</label><input type="email" placeholder="marie.martin@email.com"></div>
@@ -698,6 +743,54 @@ body::before{content:"";position:fixed;inset:0;z-index:1;pointer-events:none;bac
     <div class="rem-row"><input type="checkbox" id="rem" checked><label for="rem">Se souvenir de moi pendant 30 jours</label></div>
     <button class="login-btn" onclick="alert('Supabase sera connecté en V2')">Se connecter</button>
     <p class="login-hint">Vos identifiants ont été fournis<br>par votre auto-école lors de votre inscription.</p>
+  </div>
+</div>
+
+<!-- GÉOLOCALISATION — non-contournable (§3) : pas de croix, pas d'overlay cliquable, pas de lien "Non merci" -->
+<div id="geoloc-modal" style="display:none">
+  <div class="geoloc-overlay"></div>
+  <div class="geoloc-card">
+    <div class="geoloc-icon-wrap"><span class="geoloc-icon">📍</span></div>
+    <div class="geoloc-title">Trouvez les auto-écoles près de chez vous</div>
+    <p class="geoloc-sub" id="geoloc-sub"></p>
+    <p class="geoloc-instructions" id="geoloc-instructions" style="display:none"></p>
+    <button class="geoloc-btn" id="geoloc-btn" onclick="acceptGeoloc()">Autoriser la géolocalisation</button>
+  </div>
+</div>
+
+<!-- OVERLAY D'INSCRIPTION ÉLÈVE — affiché uniquement si ?inscription=eleve
+     dans l'URL (lien depuis nos-offres.html). Contournable via la croix : la
+     carte reste explorable librement sans créer de compte. -->
+<div id="eleve-signup-overlay">
+  <div class="esu-veil" id="esu-veil"></div>
+  <div class="esu-card">
+    <button class="esu-close" id="esu-close" aria-label="Fermer">✕</button>
+    <h2>Crée ton compte élève</h2>
+    <p class="esu-sub">Compare les auto-écoles, entraîne-toi au code et suis ton inscription.</p>
+
+    <button class="esu-google" id="esu-google">
+      <svg viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.9 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.1 8 3l5.7-5.7C34.6 6.1 29.6 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.7-.4-3.5z"/><path fill="#FF3D00" d="m6.3 14.7 6.6 4.8C14.6 15.9 18.9 13 24 13c3.1 0 5.8 1.1 8 3l5.7-5.7C34.6 6.1 29.6 4 24 4c-7.5 0-14 4.2-17.3 10.4z"/><path fill="#4CAF50" d="M24 44c5.4 0 10.4-2.1 14.1-5.4l-6.5-5.5C29.5 34.9 26.9 36 24 36c-5.2 0-9.6-3.5-11.2-8.3l-6.6 5.1C9.9 39.6 16.4 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.3-2.3 4.3-4.2 5.7l6.5 5.5C41.4 36 44 30.5 44 24c0-1.3-.1-2.7-.4-3.5z"/></svg>
+      Continuer avec Google
+    </button>
+    <div class="esu-sep">ou</div>
+
+    <form id="esu-form" novalidate>
+      <div class="esu-field">
+        <label for="esu-prenom">Prénom</label>
+        <input type="text" id="esu-prenom" required autocomplete="given-name">
+      </div>
+      <div class="esu-field">
+        <label for="esu-email">Email</label>
+        <input type="email" id="esu-email" required autocomplete="email">
+      </div>
+      <div class="esu-field">
+        <label for="esu-password">Mot de passe</label>
+        <input type="password" id="esu-password" required autocomplete="new-password" minlength="6">
+      </div>
+      <button type="submit" class="esu-submit" id="esu-submit">Créer mon compte</button>
+    </form>
+
+    <div class="esu-msg" id="esu-msg" role="status" aria-live="polite"></div>
   </div>
 </div>
 
@@ -715,6 +808,77 @@ const SUPABASE_ANON = 'sb_publishable_er7mVFa1fYYWLwGFCacZ8Q_JWX_uyCF';
    qui casserait tout le script). */
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 
+/* ============ OVERLAY D'INSCRIPTION ÉLÈVE (?inscription=eleve) ============
+   N'apparaît que si le paramètre est présent (lien depuis nos-offres.html) —
+   jamais lors d'une visite normale. Réutilise supabaseClient ci-dessus. */
+(function(){
+  var overlay = document.getElementById('eleve-signup-overlay');
+  var params = new URLSearchParams(window.location.search);
+  if (params.get('inscription') !== 'eleve') return;
+
+  overlay.style.display = 'flex';
+
+  var msg = document.getElementById('esu-msg');
+  function showMsg(text, type){ msg.className = 'esu-msg ' + type; msg.textContent = text; }
+  function frenchError(err){
+    console.error('Erreur Supabase Auth:', err);
+    var m = (err && (err.message || err.error_description || err.msg)) || '';
+    if (!m) { try { m = JSON.stringify(err); } catch (e) { m = String(err); } }
+    var lower = m.toLowerCase();
+    if (lower.indexOf('already registered') > -1) return "Un compte existe déjà avec cet email.";
+    if (lower.indexOf('password should be at least') > -1) return "Le mot de passe doit contenir au moins 6 caractères.";
+    if (lower.indexOf('invalid email') > -1 || lower.indexOf('unable to validate email') > -1) return "Adresse email invalide.";
+    if (lower.indexOf('rate limit') > -1 || lower.indexOf('too many requests') > -1) return "Trop de tentatives. Merci de patienter quelques minutes.";
+    if (lower.indexOf('failed to fetch') > -1 || lower.indexOf('network') > -1) return "Impossible de contacter le serveur. Vérifie ta connexion internet.";
+    if (!m || m === '{}') return "Une erreur inattendue est survenue. Détail technique dans la console du navigateur (F12).";
+    return m;
+  }
+
+  // Retire ?inscription=eleve de l'URL une fois l'overlay fermé/résolu, pour
+  // qu'un rechargement de page ne le fasse pas réapparaître.
+  function cleanUrl(){
+    history.replaceState(null, '', window.location.pathname + window.location.hash);
+  }
+
+  document.getElementById('esu-close').addEventListener('click', function(){
+    overlay.style.display = 'none';
+    cleanUrl();
+  });
+
+  document.getElementById('esu-google').addEventListener('click', function(){
+    supabaseClient.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: window.location.origin + '/index.html' }
+    });
+  });
+
+  document.getElementById('esu-form').addEventListener('submit', function(e){
+    e.preventDefault();
+    var btn = document.getElementById('esu-submit');
+    btn.disabled = true; btn.textContent = 'Création…';
+    var prenom = document.getElementById('esu-prenom').value.trim();
+
+    supabaseClient.auth.signUp({
+      email: document.getElementById('esu-email').value.trim(),
+      password: document.getElementById('esu-password').value,
+      options: { data: { role: 'eleve', prenom: prenom } }
+    }).then(function(res){
+      btn.disabled = false; btn.textContent = 'Créer mon compte';
+      if (res.error) { showMsg(frenchError(res.error), 'error'); return; }
+
+      if (res.data.session) {
+        overlay.style.display = 'none';
+        cleanUrl();
+      } else {
+        showMsg("Compte créé ! Vérifie ta boîte mail pour confirmer ton adresse avant de te connecter.", 'success');
+      }
+    }).catch(function(err){
+      btn.disabled = false; btn.textContent = 'Créer mon compte';
+      showMsg(frenchError(err), 'error');
+    });
+  });
+})();
+
 /* ── Appel API Supabase (fetch brut — utilisé pour les fiches détaillées / formules) ── */
 async function supabaseFetch(table, params='') {
   const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}?${params}`, {
@@ -729,9 +893,20 @@ async function supabaseFetch(table, params='') {
 
 /* ══════════════════════════════════════
    DONNÉES — chargées depuis Supabase
-   SCHOOLS = tableau global rempli au démarrage
+   SCHOOLS = tableau plat de toutes les écoles (champs complets) chargées
+             jusqu'ici, département par département (loadDept) — sert aux
+             lookups par id (showFiche, focusSchool, recherche).
+   SCHOOLS_BY_ID = Map id -> école, pour dédupliquer les ajouts dans SCHOOLS.
+   SCHOOLS_LIGHT = tableau plat de TOUTES les écoles (champs légers), chargé
+             une fois en arrière-plan au démarrage, uniquement pour les hubs.
+   DEPT_HUBS = { dept: {count, lat, lng, bounds} }, calculé depuis SCHOOLS_LIGHT.
+   loadedDepts = départements déjà chargés en full (cache réseau, §4).
 ══════════════════════════════════════ */
 let SCHOOLS = [];
+let SCHOOLS_BY_ID = new Map();
+let SCHOOLS_LIGHT = [];
+let DEPT_HUBS = {};
+let loadedDepts = new Set();
 
 /* Convertit une ligne Supabase au format attendu par le frontend */
 function formatSchool(row) {
@@ -757,6 +932,7 @@ function formatSchool(row) {
     website:     row.website || null,
     rating:      parseFloat(row.google_rating) || null,
     reviews:     row.google_reviews || 0,
+    place_id:    row.google_place_id || null,
     success:     row.success_rate || null,
     students:    null,
     founded:     row.founded_year || null,
@@ -777,45 +953,146 @@ function showLoader(msg) {
   document.getElementById('sidebar-count').textContent = msg;
 }
 
-/* Charge la liste complète des auto-écoles (schools) via le SDK Supabase,
-   par lots de 1000 lignes (limite de l'API), triée par flexi_score décroissant.
-   Les fiches partenaires détaillées (formules, etc.) restent chargées à la demande
-   par loadSchoolDetails() via supabaseFetch(). */
-const FIELDS = 'id,name,city,address,zip,lat,lng,google_rating,google_reviews,success_rate,permits,is_partner,flexi_score,slots,website,phone';
+/* Champs complets — chargés uniquement PAR DÉPARTEMENT (loadDept), à la demande,
+   jamais pour les 10 852 écoles d'un coup. Les fiches partenaires détaillées
+   (formules, etc.) restent chargées à la demande par loadSchoolDetails(). */
+const FIELDS = 'id,name,city,address,zip,lat,lng,google_rating,google_reviews,google_place_id,success_rate,permits,is_partner,flexi_score,slots,website,phone';
+/* Champs légers — chargés pour TOUTES les écoles en arrière-plan au démarrage,
+   uniquement pour calculer les 96 hubs départementaux (comptage + centroïde).
+   Volontairement plus étroit que FIELDS : moins d'octets pour un chargement
+   national qui ne sert qu'à l'agrégation, pas à l'affichage détaillé. */
+const LIGHT_FIELDS = 'id,name,city,lat,lng,zip,success_rate,google_rating,permits';
 const PAGE_SIZE = 1000;
 
-async function loadSchools() {
-  showLoader('Chargement...');
+/* Déduit le département depuis un code postal (règle DOM : 3 premiers chiffres,
+   sinon 2 premiers). '00' pour les zip absents/invalides — regroupés dans un
+   hub distinct plutôt que d'être silencieusement ignorés. */
+function deptFromZip(zip){
+  return (zip && zip.length >= 2) ? (zip.startsWith('97') ? zip.substring(0,3) : zip.substring(0,2)) : '00';
+}
+
+/* Charge id/name/city/lat/lng/zip/success_rate/google_rating/permits pour TOUTES
+   les écoles géolocalisées, par lots de 1000 (limite API), en arrière-plan —
+   sert uniquement à calculer DEPT_HUBS (§ renderHubs) et à savoir quel(s)
+   département(s) couvre un bbox de ville (§ deptsForBBox). N'affiche jamais de
+   marker individuel : addMarkers()/updateMarkers() n'existent plus, remplacés
+   par le rendu des hubs puis, à la demande, loadDept(). */
+async function loadSchoolsLight() {
   try {
     let all = [];
     let from = 0;
     while (true) {
       const { data, error } = await supabaseClient
         .from('schools')
-        .select(FIELDS)
+        .select(LIGHT_FIELDS)
         .not('lat', 'is', null)
         .not('lng', 'is', null)
-        .order('flexi_score', { ascending: false, nullsFirst: false })
+        .or('qualite_donnees.neq.a_purger,qualite_donnees.is.null')
         .range(from, from + PAGE_SIZE - 1);
 
       if (error) throw error;
       if (!data || data.length === 0) break;
 
       all = all.concat(data);
-      showLoader(`${all.length} auto-écoles...`);
-
       if (data.length < PAGE_SIZE) break;
       from += PAGE_SIZE;
     }
 
-    SCHOOLS = all.filter(r => r.lat && r.lng).map(formatSchool);
-    showLoader(`${SCHOOLS.length} auto-écoles`);
-    addMarkers();
-    renderList();
+    SCHOOLS_LIGHT = all;
+    computeDeptHubs();
+    renderHubs();
+    if (cur === 'carte') showCarteReady();
 
   } catch(e) {
-    console.error('Erreur chargement Supabase:', e);
+    console.error('Erreur chargement léger Supabase:', e);
     showLoader('Erreur de chargement');
+  }
+}
+
+/* Regroupe SCHOOLS_LIGHT par département, calcule le centroïde (moyenne des
+   lat/lng) et le nombre d'écoles — c'est tout ce qu'il faut pour dessiner un hub. */
+function computeDeptHubs(){
+  const agg = {};
+  SCHOOLS_LIGHT.forEach(s => {
+    if(!s.lat || !s.lng) return;
+    const d = deptFromZip(s.zip);
+    if(!agg[d]) agg[d] = { count:0, sumLat:0, sumLng:0, minLat:s.lat, maxLat:s.lat, minLng:s.lng, maxLng:s.lng };
+    const a = agg[d];
+    a.count++;
+    a.sumLat += s.lat; a.sumLng += s.lng;
+    if(s.lat < a.minLat) a.minLat = s.lat;
+    if(s.lat > a.maxLat) a.maxLat = s.lat;
+    if(s.lng < a.minLng) a.minLng = s.lng;
+    if(s.lng > a.maxLng) a.maxLng = s.lng;
+  });
+  DEPT_HUBS = {};
+  Object.keys(agg).forEach(d => {
+    const a = agg[d];
+    DEPT_HUBS[d] = {
+      dept: d, count: a.count,
+      lat: a.sumLat / a.count, lng: a.sumLng / a.count,
+      bounds: { minLat:a.minLat, maxLat:a.maxLat, minLng:a.minLng, maxLng:a.maxLng },
+    };
+  });
+}
+
+/* Charge les écoles (champs complets) d'UN département depuis Supabase, filtré
+   par préfixe de code postal. Mémorise le résultat dans loadedDepts pour ne
+   jamais recharger deux fois le même département (cache réseau). */
+async function loadDept(dept){
+  if(loadedDepts.has(dept)) return;
+  loadedDepts.add(dept);
+  try {
+    const { data, error } = await supabaseClient
+      .from('schools')
+      .select(FIELDS)
+      .like('zip', dept + '%')
+      .not('lat', 'is', null)
+      .not('lng', 'is', null)
+      .or('qualite_donnees.neq.a_purger,qualite_donnees.is.null');
+
+    if (error) throw error;
+    (data || []).map(formatSchool).forEach(s => {
+      if(!SCHOOLS_BY_ID.has(s.id)){
+        SCHOOLS_BY_ID.set(s.id, s);
+        SCHOOLS.push(s);
+      }
+    });
+  } catch(e) {
+    loadedDepts.delete(dept); // permet de retenter si l'appel a échoué
+    console.error('Erreur chargement département', dept, e);
+  }
+}
+
+/* Charge une fois, en arrière-plan, les 50 meilleures auto-écoles de France par
+   flexi_score décroissant — repli utilisé par getScopedSchools() quand aucun
+   centre actif (géoloc/recherche/cluster) n'est disponible, pour ne jamais
+   laisser le panel vide (règle principale). */
+async function loadNationalTopSchools(){
+  try {
+    const { data, error } = await supabaseClient
+      .from('schools')
+      .select(FIELDS)
+      .not('lat', 'is', null)
+      .not('lng', 'is', null)
+      .or('qualite_donnees.neq.a_purger,qualite_donnees.is.null')
+      .order('flexi_score', { ascending: false, nullsFirst: false })
+      .limit(50);
+
+    if (error) throw error;
+    NATIONAL_TOP_SCHOOLS = (data || []).map(formatSchool);
+    NATIONAL_TOP_SCHOOLS.forEach(s => {
+      if(!SCHOOLS_BY_ID.has(s.id)){
+        SCHOOLS_BY_ID.set(s.id, s);
+        SCHOOLS.push(s);
+      }
+    });
+    // Si on affiche actuellement ce repli (rien d'autre d'actif), rafraîchit la vue.
+    if(cur === 'carte' && !activeDept && !activeCityBBox && activeCenter.source === 'france'){
+      renderActiveView();
+    }
+  } catch(e) {
+    console.error('Erreur chargement top national', e);
   }
 }
 
@@ -823,7 +1100,7 @@ async function loadSchools() {
 async function loadSchoolDetails(id) {
   try {
     const rows = await supabaseFetch('schools',
-      `select=*&id=eq.${id}&limit=1`
+      `select=*&id=eq.${id}&or=(qualite_donnees.neq.a_purger,qualite_donnees.is.null)&limit=1`
     );
     if (!rows.length) return null;
     const school = formatSchool(rows[0]);
@@ -853,30 +1130,64 @@ async function loadSchoolDetails(id) {
 /* ══════════════════════════════════════
    STATE
 ══════════════════════════════════════ */
-let map, sc=null, scLoaded=false, markers={}, renderedMarkers=new Map(), idleDebounceTimer=null, isUpdatingMarkers=false, pendingMarkersUpdate=false, lastRenderedBounds=null, cur='home', ficheFrom='home', ficheMap=null;
-let currentSort='all', sidebarQuery='', viewMode='card', permitFilter='all';
-let radiusKm=0, userLat=null, userLng=null;
-const RADIUS_VALUES=[0,10,25,50,100,200];
+let map, cur='home', ficheFrom='home', ficheMap=null;
+let idleDebounceTimer=null;
+/* Zoom à partir duquel on considère qu'on est "dans" un département plutôt
+   qu'en vue nationale (hubs) — sous ce seuil, le pan ne déclenche jamais de
+   changement/chargement automatique de département (§4). */
+const DRILL_ZOOM_THRESHOLD = 9;
+/* activeDept/activeCityBBox pilotent uniquement le drill-in visuel de la CARTE
+   (hub masqué + markers individuels + contour) ; null+null = vue hubs. Le
+   PANEL, lui, ne dépend plus de ces deux variables (cf. getScopedSchools) —
+   il continue d'afficher des auto-écoles même en vue hubs (règle principale). */
+let activeDept = null, activeCityBBox = null, activeCityLabel = null;
+let hubMarkers = {}, activeMarkers = {};
+let currentBoundaryFill = null, currentBoundaryLine = null;
+let markers = {}; // id -> marker, pour les écoles actuellement affichées individuellement
+let selectedSchoolId = null; // école dont le marker est actuellement en #0F172A (bleu nuit)
+let selectedHubDept = null; // département dont le hub est actuellement en #0F172A (bleu nuit)
+/* Zoom atteint à l'ouverture du département actif (switchToDept) — sert de
+   référence relative pour cacher/réafficher les markers individuels au dézoom
+   (§ BUG 2) sans jamais toucher au panel gauche ni fermer le département. */
+let drillZoom = null;
+
+let permitFilter='B', currentSort='all', viewMode='card';
+let radiusKm=20, userLat=null, userLng=null;
+
+/* Centre actif : pilote le tri par distance et (selon sa source) le périmètre
+   affiché. Mis à jour à chaque action utilisateur pertinente (géoloc, clic
+   cluster, recherche...) — jamais null. */
+let activeCenter = { lat: 46.5, lng: 2.5, source: 'france' };
+/* Mémorise le dernier cluster/département cliqué, indépendamment de activeDept
+   (qui ne reflète que l'état du DRILL-IN sur la carte et redevient null en vue
+   hubs) — sert de repli pour la liste quand on revient à la vue d'ensemble ou
+   qu'on efface une recherche sans géolocalisation accordée. */
+let lastClusterCenter = null, lastClusterDept = null;
+/* Repli national : 50 meilleures auto-écoles par flexi_score, chargées une fois
+   en arrière-plan au démarrage — garantit que le panel n'est jamais vide même
+   sans géolocalisation ni département jamais ouvert. */
+let NATIONAL_TOP_SCHOOLS = [];
 
 /* ══════════════════════════════════════
    MAP — Google Maps
 ══════════════════════════════════════ */
-// Style "Voyager" clair, façon Yego : routes nettes, POI discrets, eau bleu pâle
+// Style coloré et contrasté, teintes adoucies (moins saturé que la version
+// précédente) — exception documentée à la règle DESIGN.md "ne jamais modifier
+// le style visuel de la carte", validée explicitement pour cette tâche.
 const MAP_STYLE = [
-  {elementType:'geometry',stylers:[{color:'#f4fbff'}]},
-  {elementType:'labels.text.fill',stylers:[{color:'#5f7588'}]},
-  {elementType:'labels.text.stroke',stylers:[{color:'#ffffff'},{weight:3}]},
-  {featureType:'administrative',elementType:'geometry',stylers:[{color:'#c7dceb'}]},
-  {featureType:'administrative.locality',elementType:'labels.text.fill',stylers:[{color:'#17324d'}]},
-  {featureType:'poi',stylers:[{visibility:'off'}]},
-  {featureType:'road',elementType:'geometry',stylers:[{color:'#ffffff'}]},
-  {featureType:'road',elementType:'geometry.stroke',stylers:[{color:'#dce9f2'}]},
-  {featureType:'road.highway',elementType:'geometry',stylers:[{color:'#fde9c8'}]},
-  {featureType:'road.highway',elementType:'geometry.stroke',stylers:[{color:'#f4d49a'}]},
-  {featureType:'road.arterial',elementType:'geometry',stylers:[{color:'#ffffff'}]},
-  {featureType:'transit',stylers:[{visibility:'off'}]},
-  {featureType:'water',elementType:'geometry',stylers:[{color:'#dff2fb'}]},
-  {featureType:'water',elementType:'labels.text.fill',stylers:[{color:'#7ba9c4'}]},
+  { featureType: 'water', elementType: 'geometry', stylers: [{ color: '#c8e6f0' }] },
+  { featureType: 'landscape', elementType: 'geometry', stylers: [{ color: '#f0f7ec' }] },
+  { featureType: 'landscape.natural', elementType: 'geometry', stylers: [{ color: '#e8f3e2' }] },
+  { featureType: 'road.highway', elementType: 'geometry', stylers: [{ color: '#fde68a' }, { weight: 1.2 }] },
+  { featureType: 'road.arterial', elementType: 'geometry', stylers: [{ color: '#ffffff' }, { weight: 0.8 }] },
+  { featureType: 'road.local', elementType: 'geometry', stylers: [{ color: '#f8f8f8' }, { weight: 0.4 }] },
+  { featureType: 'poi.park', elementType: 'geometry', stylers: [{ color: '#d4ecc8' }] },
+  { featureType: 'poi', elementType: 'labels', stylers: [{ visibility: 'off' }] },
+  { featureType: 'transit', stylers: [{ visibility: 'off' }] },
+  { featureType: 'administrative.country', elementType: 'geometry.stroke', stylers: [{ color: '#b0ccd8' }, { weight: 1 }] },
+  { featureType: 'administrative.province', elementType: 'geometry.stroke', stylers: [{ color: '#c4d8e0' }, { weight: 0.8 }] },
+  { elementType: 'labels.text.fill', stylers: [{ color: '#6b8f7a' }] },
+  { elementType: 'labels.text.stroke', stylers: [{ color: '#ffffff' }, { weight: 2 }] },
 ];
 
 let infoWindow = null;
@@ -897,17 +1208,197 @@ function initMap(){
     if (btn) {
       btn.style.display = map.getZoom() > 6 ? 'flex' : 'none';
     }
+    updateDrillMarkersVisibility(); // § BUG 2 — molette, boutons +/-, pincement déclenchent tous ce même événement
+  });
+  // Curseur main ouverte/fermée sur la carte vide (les markers/hubs gardent
+  // leur propre cursor:pointer, plus spécifique) — seul un drag utilisateur
+  // réel déclenche dragstart/dragend, pas un panTo()/setCenter() programmatique.
+  map.addListener('dragstart', () => document.getElementById('map').classList.add('map-dragging'));
+  map.addListener('dragend', () => document.getElementById('map').classList.remove('map-dragging'));
+  // Clic sur la carte vide (ni marker ni hub, qui interceptent leur propre
+  // clic sans jamais déclencher celui-ci) : ferme le popup et désélectionne
+  // le marker actif.
+  map.addListener('click', () => {
+    if (infoWindow) infoWindow.close();
+    deselectSchoolMarker();
   });
   infoWindow = new google.maps.InfoWindow({ disableAutoPan:false, maxWidth:280 });
-  sc = new Supercluster({
-    radius: 60,   // rayon de clustering en pixels
-    maxZoom: 15,  // zoom max avant d'afficher les markers individuels
-    minZoom: 0,
-  });
+  // Débounce 200ms sur 'idle' : détecte un changement de zone visible (§4 —
+  // "navigation intelligente par zone") au lieu de recalculer des clusters.
   map.addListener('idle', () => {
     clearTimeout(idleDebounceTimer);
-    idleDebounceTimer = setTimeout(updateMarkers, 200);
+    idleDebounceTimer = setTimeout(onMapIdle, 200);
   });
+}
+
+/* Un fitBounds()/panTo() déclenché par NOTRE code (switchToDept, searchCity,
+   recenterMap...) émet lui aussi un 'idle' une fois la caméra stabilisée. Si le
+   département ciblé est géographiquement grand, ce fitBounds peut atterrir sous
+   DRILL_ZOOM_THRESHOLD — sans cette suppression, onMapIdle() interpréterait ça
+   comme "l'utilisateur a dézoomé" et annulerait instantanément le drill-in
+   qu'on vient de faire (boucle qui s'auto-annule). On coupe onMapIdle() pendant
+   une courte fenêtre après chaque mouvement de caméra programmatique. */
+let suppressIdleUntil = 0;
+function suppressIdle(ms){ suppressIdleUntil = Date.now() + ms; }
+
+/* Appelé après chaque déplacement/zoom stabilisé de la carte (idle). En dessous
+   de DRILL_ZOOM_THRESHOLD, on est en vue nationale (hubs) : si une recherche
+   ville était active, on revient à la vue d'ensemble. Un département actif,
+   lui, ne se ferme JAMAIS via le zoom (§ BUG 2 — updateDrillMarkersVisibility
+   se charge seul de cacher/réafficher ses markers individuels selon drillZoom ;
+   il ne se ferme que par clic sur un autre cluster ou retour accueil/quitter
+   carte). Au-dessus du seuil, on détecte le département le plus proche du
+   centre visible ; s'il diffère du département actif, on y bascule (chargement
+   Supabase seulement si pas déjà en cache). */
+function onMapIdle(){
+  if(Date.now() < suppressIdleUntil) return;
+  if(cur !== 'carte' || Object.keys(DEPT_HUBS).length === 0) return;
+  const zoom = map.getZoom();
+  if(zoom < DRILL_ZOOM_THRESHOLD){
+    if(activeCityBBox) returnToOverview();
+    return;
+  }
+  if(activeCityBBox) return; // recherche ville active : le pan ne bascule pas automatiquement sur un département
+  const center = map.getCenter();
+  const dept = nearestDept(center.lat(), center.lng());
+  if(!dept || dept === activeDept) return;
+  const hub = DEPT_HUBS[dept];
+  activeCenter = { lat: hub.lat, lng: hub.lng, source: 'cluster' };
+  lastClusterCenter = activeCenter;
+  lastClusterDept = dept;
+  switchToDept(dept);
+}
+
+/* Département dont le centroïde (hub) est le plus proche d'un point donné —
+   heuristique simple (pas de polygone officiel de département chargé) mais
+   cohérente avec le reste de l'architecture "hubs". */
+function nearestDept(lat, lng){
+  let best = null, bestDist = Infinity;
+  Object.values(DEPT_HUBS).forEach(hub => {
+    const d = (hub.lat-lat)**2 + (hub.lng-lng)**2;
+    if(d < bestDist){ bestDist = d; best = hub.dept; }
+  });
+  return best;
+}
+
+/* ══════════════════════════════════════
+   GÉOLOCALISATION — modal non-contournable (§3)
+══════════════════════════════════════ */
+
+let geolocAttempts = 0; // compteur de tentatives refusées (état 2 -> état 3 après 3)
+
+function showGeolocModal(){
+  document.getElementById('geoloc-modal').style.display = 'flex';
+  document.getElementById('map').classList.add('geoloc-blur');
+}
+function hideGeolocModal(){
+  document.getElementById('geoloc-modal').style.display = 'none';
+  document.getElementById('map').classList.remove('geoloc-blur');
+}
+
+/* Bascule le contenu de la modal entre ses 3 états visuels (§3). L'état 4
+   (bloqué dès le départ) réutilise le rendu de l'état 3. */
+function renderGeolocState(state){
+  const sub = document.getElementById('geoloc-sub');
+  const instructions = document.getElementById('geoloc-instructions');
+  const btn = document.getElementById('geoloc-btn');
+  if(state === 1){
+    sub.textContent = "FlexiAuto utilise votre position pour afficher les auto-écoles dans votre secteur. Sans cette autorisation, le service ne peut pas fonctionner correctement.";
+    instructions.style.display = 'none';
+    btn.textContent = 'Autoriser la géolocalisation';
+  } else if(state === 2){
+    sub.textContent = 'Vous avez refusé la géolocalisation. FlexiAuto a besoin de votre position pour fonctionner.';
+    instructions.style.display = 'none';
+    btn.textContent = 'Réessayer';
+  } else {
+    const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+    sub.textContent = 'Pour activer la géolocalisation :';
+    instructions.textContent = isSafari
+      ? 'Réglages → Confidentialité → Service de localisation → Safari → Autoriser'
+      : 'Paramètres → Confidentialité → Paramètres du site → Localisation → Autoriser';
+    instructions.style.display = 'block';
+    btn.textContent = "J'ai activé la géolocalisation → Réessayer";
+  }
+}
+
+/* Point d'entrée : appelé à l'arrivée sur la carte. Si la position est déjà
+   connue (session en cours), ne fait rien. Sinon, vérifie l'état RÉEL de la
+   permission (Permissions API) pour décider : déjà accordée → récupère la
+   position silencieusement sans montrer la modal (§1, comportement par
+   défaut) ; déjà bloquée → état 3/4 direct ; jamais demandée → état 1. Le
+   flag localStorage 'geoloc-granted' sert de repli si l'API est indisponible
+   (Safari) ; la vérification live prime dessus pour détecter une révocation. */
+async function initGeolocation(){
+  if(userLat != null) return;
+  let state = null;
+  try{
+    if(navigator.permissions && navigator.permissions.query){
+      const status = await navigator.permissions.query({name:'geolocation'});
+      state = status.state; // 'granted' | 'denied' | 'prompt'
+    }
+  }catch(e){ /* Permissions API indisponible : repli sur le flag localStorage */ }
+
+  const trustedGranted = state === 'granted' || (state === null && localStorage.getItem('geoloc-granted') === 'true');
+
+  if(trustedGranted){
+    navigator.geolocation.getCurrentPosition(onGeolocSuccess, ()=>{
+      // Accordé auparavant mais révoqué depuis dans les réglages (§ Mémorisation).
+      localStorage.removeItem('geoloc-granted');
+      geolocAttempts = 3;
+      renderGeolocState(3);
+      showGeolocModal();
+    });
+    return;
+  }
+
+  if(state === 'denied'){
+    localStorage.removeItem('geoloc-granted');
+    geolocAttempts = 3;
+    renderGeolocState(3); // état 4 : bloqué dès le départ, mêmes instructions que l'état 3
+    showGeolocModal();
+    return;
+  }
+
+  renderGeolocState(1);
+  showGeolocModal();
+}
+
+function acceptGeoloc(){
+  navigator.geolocation.getCurrentPosition(onGeolocSuccess, onGeolocError);
+}
+
+async function onGeolocSuccess(p){
+  userLat = p.coords.latitude; userLng = p.coords.longitude;
+  activeCenter = { lat: userLat, lng: userLng, source: 'gps' };
+  radiusKm = 20;
+  const slider = document.getElementById('radius-slider');
+  slider.value = 20;
+  document.getElementById('radius-val').textContent = '20km';
+  updateSliderFill(slider);
+  localStorage.setItem('geoloc-granted', 'true');
+  geolocAttempts = 0;
+  hideGeolocModal();
+  await centerLoadAndFilter(userLat, userLng);
+}
+
+function onGeolocError(err){
+  geolocAttempts++;
+  localStorage.removeItem('geoloc-granted');
+  renderGeolocState(geolocAttempts >= 3 ? 3 : 2);
+  showGeolocModal();
+}
+
+/* Charge/affiche le département couvrant un point (donne des écoles à filtrer
+   par rayon), puis recentre précisément la carte dessus. Partagée par l'accord
+   de géolocalisation (§3) et la recherche interne par ville/école (§1). */
+async function centerLoadAndFilter(lat, lng, zoom){
+  const dept = nearestDept(lat, lng);
+  if(dept && dept !== activeDept) await switchToDept(dept);
+  else if(dept) renderActiveView(); // même département : pas de rechargement/redessin du contour, juste le filtre rayon
+  suppressIdle(1200);
+  map.panTo({lat, lng});
+  map.setZoom(zoom || 11);
+  if(!dept) renderActiveView();
 }
 
 function clusterPopupHTML(schools){
@@ -923,224 +1414,330 @@ function clusterPopupHTML(schools){
   </div>`;
 }
 
-function mkIconUrl(){
+/* Icône marker "voiture" — toujours #1B4FD8, sauf le marker actuellement
+   sélectionné qui passe en #0F172A (bleu nuit) via le paramètre color. Aucune
+   variation de couleur par score/statut : un seul marker signature (§2). */
+function mkIconUrl(color){
+  color = color || '#1B4FD8';
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 36 36">
-    <circle cx="18" cy="18" r="17" fill="rgba(255,255,255,0.96)" stroke="rgba(25,118,210,0.55)" stroke-width="2"/>
-    <circle cx="18" cy="18" r="12" fill="#1976d2"/>
+    <circle cx="18" cy="18" r="17" fill="rgba(255,255,255,0.96)" stroke="rgba(27,79,216,0.55)" stroke-width="2"/>
+    <circle cx="18" cy="18" r="12" fill="${color}"/>
     <path transform="translate(9,9) scale(0.75)" fill="#ffffff" d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 16c-.83 0-1.5-.67-1.5-1.5S5.67 13 6.5 13s1.5.67 1.5 1.5S7.33 16 6.5 16zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM5 11l1.5-4.5h11L19 11H5z"/>
   </svg>`;
   return 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(svg);
 }
 
-/* Charge tous les points dans Supercluster (index spatial en mémoire) puis
-   déclenche un premier rendu. À appeler une fois que SCHOOLS est peuplé. */
-function addMarkers(){
-  sc.load(SCHOOLS.filter(s => s.lat && s.lng).map(s => ({
-    type: 'Feature',
-    geometry: { type: 'Point', coordinates: [s.lng, s.lat] },
-    properties: { school: s },
-  })));
-  scLoaded = true;
-  updateMarkers();
-}
-
-/* Vrai si la vue a bougé de plus de 10% de sa propre largeur/hauteur depuis le
-   dernier rendu, ou si le zoom a changé (les clusters diffèrent par zoom, donc
-   un changement de zoom est toujours significatif). */
-function boundsChangedSignificantly(bounds, zoom){
-  if(!lastRenderedBounds) return true;
-  if(zoom !== lastRenderedBounds.zoom) return true;
-
-  const sw = bounds.getSouthWest();
-  const ne = bounds.getNorthEast();
-  const width = ne.lng() - sw.lng();
-  const height = ne.lat() - sw.lat();
-  if(width <= 0 || height <= 0) return true;
-
-  const shiftLng = Math.max(
-    Math.abs(sw.lng() - lastRenderedBounds.sw.lng),
-    Math.abs(ne.lng() - lastRenderedBounds.ne.lng)
-  ) / width;
-  const shiftLat = Math.max(
-    Math.abs(sw.lat() - lastRenderedBounds.sw.lat),
-    Math.abs(ne.lat() - lastRenderedBounds.ne.lat)
-  ) / height;
-
-  return Math.max(shiftLng, shiftLat) > 0.10;
-}
-
-/* Recalcule les clusters/markers visibles pour la vue actuelle (bounds + zoom)
-   et ne touche que ce qui a changé depuis le dernier rendu (Map() par clé). */
-function updateMarkers(){
-  if(!sc || !scLoaded) return;
-  if(isUpdatingMarkers){
-    // Une mise à jour est déjà en cours : on retentera avec l'état (bounds/zoom)
-    // le plus récent dès qu'elle sera terminée, au lieu de perdre cet appel.
-    pendingMarkersUpdate = true;
-    return;
-  }
-  const bounds = map.getBounds();
-  if(!bounds) return;
-  const zoom = Math.floor(map.getZoom());
-  if(!boundsChangedSignificantly(bounds, zoom)) return;
-
-  isUpdatingMarkers = true;
-  const sw = bounds.getSouthWest();
-  const ne = bounds.getNorthEast();
-  lastRenderedBounds = {
-    sw: { lat: sw.lat(), lng: sw.lng() },
-    ne: { lat: ne.lat(), lng: ne.lng() },
-    zoom,
-  };
-
-  const bbox = [sw.lng(), sw.lat(), ne.lng(), ne.lat()];
-  const clusters = sc.getClusters(bbox, zoom);
-
-  // Priorité : gros clusters d'abord (plus de points = plus important
-  // visuellement), puis markers individuels triés par meilleur flexi_score.
-  clusters.sort((a, b) => {
-    const countA = a.properties.cluster ? a.properties.point_count : 1;
-    const countB = b.properties.cluster ? b.properties.point_count : 1;
-    if (countB !== countA) return countB - countA;
-    const scoreA = a.properties.cluster ? 0 : (a.properties.school.score || 0);
-    const scoreB = b.properties.cluster ? 0 : (b.properties.school.score || 0);
-    return scoreB - scoreA;
-  });
-
-  // Limite à 300 éléments maximum visibles simultanément
-  const MAX_VISIBLE = 300;
-  const visibleClusters = clusters.length > MAX_VISIBLE
-    ? clusters.slice(0, MAX_VISIBLE)
-    : clusters;
-
-  const limitNotice = document.getElementById('sidebar-limit-notice');
-  if(limitNotice) limitNotice.style.display = clusters.length > MAX_VISIBLE ? 'block' : 'none';
-
-  // Les opérations DOM (création/suppression de markers) sont regroupées
-  // dans une frame d'animation pour rester alignées sur le cycle de rendu.
-  requestAnimationFrame(() => {
-    const nextKeys = new Set();
-
-    visibleClusters.forEach(feature => {
-      const [lng, lat] = feature.geometry.coordinates;
-
-      if(feature.properties.cluster){
-        const key = 'cl-' + feature.properties.cluster_id;
-        nextKeys.add(key);
-        if(!renderedMarkers.has(key)){
-          renderedMarkers.set(key, renderClusterMarker(feature, {lat, lng}));
-        }
-      } else {
-        const s = feature.properties.school;
-        const key = 'pt-' + s.id;
-        nextKeys.add(key);
-        if(!renderedMarkers.has(key)){
-          const m = renderSchoolMarker(s);
-          renderedMarkers.set(key, m);
-          markers[s.id] = m;
-        }
-      }
-    });
-
-    // Retire du plan uniquement les markers qui ne sont plus dans la vue courante
-    renderedMarkers.forEach((marker, key) => {
-      if(!nextKeys.has(key)){
-        marker.setMap(null);
-        renderedMarkers.delete(key);
-        if(key.startsWith('pt-')) delete markers[key.slice(3)];
-      }
-    });
-
-    isUpdatingMarkers = false;
-    if(pendingMarkersUpdate){
-      pendingMarkersUpdate = false;
-      updateMarkers(); // rattrape l'état le plus récent de la carte
-    }
-  });
-}
-
-/* Marker individuel — même design qu'avant : cercle bleu + icône voiture.
-   N'est appelée par updateMarkers() que pour une clé absente de renderedMarkers ;
-   un marker déjà existant n'est donc jamais recréé. */
-function renderSchoolMarker(s){
-  const m = new google.maps.Marker({
-    map,
-    position: {lat:s.lat, lng:s.lng},
-    icon: { url: mkIconUrl(), scaledSize: new google.maps.Size(36,36), anchor: new google.maps.Point(18,18) },
-    title: s.name,
-  });
-  m.addListener('click', () => {
-    if(cur !== 'carte') showCarte();
-    hlCard(s.id);
-    const zoom = map.getZoom();
-    if (zoom < 14) {
-      const d = 0.006;
-      map.fitBounds(new google.maps.LatLngBounds(
-        {lat: s.lat - d, lng: s.lng - d},
-        {lat: s.lat + d, lng: s.lng + d}
-      ), 60);
-      setTimeout(() => {
-        infoWindow.setContent(popupHTML(s));
-        infoWindow.open({map, anchor: m});
-      }, 650);
-    } else {
-      map.panTo({lat: s.lat, lng: s.lng});
-      infoWindow.setContent(popupHTML(s));
-      infoWindow.open({map, anchor: m});
-    }
-  });
-  return m;
-}
-
-/* SVG du cluster — anneaux concentriques style Yego, taille selon le nombre de points */
-function clusterIconUrl(count){
+/* SVG du hub/cluster — anneaux concentriques style Yego, taille selon le nombre
+   de points, toujours #1B4FD8 sauf le hub actuellement sélectionné (clic) qui
+   passe en #0F172A (bleu nuit), même logique que le marker individuel (§2). */
+function clusterIconUrl(count, selected){
   const size = count < 10 ? 34 : count < 50 ? 40 : 46;
   const c = size/2;
+  const color = selected ? '#0F172A' : '#1B4FD8';
+  const ring1 = selected ? 'rgba(15,23,42,0.12)' : 'rgba(27,79,216,0.10)';
+  const ring2 = selected ? 'rgba(15,23,42,0.20)' : 'rgba(27,79,216,0.18)';
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}">
-    <circle cx="${c}" cy="${c}" r="${c-1}" fill="rgba(25,118,210,0.10)"/>
-    <circle cx="${c}" cy="${c}" r="${c*0.76}" fill="rgba(25,118,210,0.18)"/>
-    <circle cx="${c}" cy="${c}" r="${c*0.54}" fill="#1976d2"/>
+    <circle cx="${c}" cy="${c}" r="${c-1}" fill="${ring1}"/>
+    <circle cx="${c}" cy="${c}" r="${c*0.76}" fill="${ring2}"/>
+    <circle cx="${c}" cy="${c}" r="${c*0.54}" fill="${color}"/>
   </svg>`;
   return { url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(svg), size };
 }
 
-/* Marker de cluster — mêmes anneaux concentriques bleus qu'avant.
-   Au clic : zoom sur l'étendue exacte des points du cluster (fitBounds).
-   N'est appelée par updateMarkers() que pour une clé absente de renderedMarkers ;
-   un cluster déjà existant n'est donc jamais recréé. */
-function renderClusterMarker(feature, position){
-  const count = feature.properties.point_count;
-  const clusterId = feature.properties.cluster_id;
-  const { url, size } = clusterIconUrl(count);
+/* ══════════════════════════════════════
+   HUBS DÉPARTEMENTAUX
+══════════════════════════════════════ */
+
+/* Affiche un marker "hub" par département (DEPT_HUBS), avec le même design que
+   les anciens clusters (anneaux + compteur). Ne touche pas aux départements
+   déjà "ouverts" individuellement (hubMarkers ne les contient plus, cf. hideHub). */
+
+function renderHubs(){
+  Object.values(DEPT_HUBS).forEach(hub => {
+    if(hubMarkers[hub.dept]) return; // déjà affiché
+    const { url, size } = clusterIconUrl(hub.count, hub.dept === selectedHubDept);
+    const m = new google.maps.Marker({
+      map,
+      position: { lat: hub.lat, lng: hub.lng },
+      icon: { url, scaledSize: new google.maps.Size(size, size), anchor: new google.maps.Point(size/2, size/2) },
+      label: {
+        text: String(hub.count),
+        color: '#ffffff',
+        fontFamily: 'Inter,sans-serif',
+        fontWeight: '700',
+        fontSize: hub.count < 10 ? '11px' : hub.count < 50 ? '12px' : '13px',
+      },
+      zIndex: Number(google.maps.Marker.MAX_ZINDEX) + hub.count,
+    });
+    m.addListener('click', () => onHubClick(hub.dept));
+    hubMarkers[hub.dept] = m;
+  });
+}
+function hideHub(dept){
+  if(hubMarkers[dept]){ hubMarkers[dept].setMap(null); delete hubMarkers[dept]; }
+}
+function showHub(dept){
+  if(!hubMarkers[dept] && DEPT_HUBS[dept]) renderHubs();
+}
+
+/* Hub sélectionné en #0F172A (bleu nuit), tous les autres restent #1B4FD8 —
+   un seul hub "sélectionné" à la fois, même logique que selectSchoolMarker. */
+function selectHub(dept){
+  if(selectedHubDept && selectedHubDept !== dept) deselectHub();
+  selectedHubDept = dept;
+  const hub = DEPT_HUBS[dept];
+  if(hub && hubMarkers[dept]){
+    const { url, size } = clusterIconUrl(hub.count, true);
+    hubMarkers[dept].setIcon({ url, scaledSize: new google.maps.Size(size, size), anchor: new google.maps.Point(size/2, size/2) });
+  }
+}
+function deselectHub(){
+  const hub = selectedHubDept && DEPT_HUBS[selectedHubDept];
+  if(hub && hubMarkers[selectedHubDept]){
+    const { url, size } = clusterIconUrl(hub.count, false);
+    hubMarkers[selectedHubDept].setIcon({ url, scaledSize: new google.maps.Size(size, size), anchor: new google.maps.Point(size/2, size/2) });
+  }
+  selectedHubDept = null;
+}
+
+/* Clic sur un hub département : zoome sur l'étendue min/max de ses écoles,
+   dessine le contour pointillé, charge le département (si pas déjà en cache)
+   et bascule la sidebar + les markers sur ce seul département. */
+async function onHubClick(dept){
+  const hub = DEPT_HUBS[dept];
+  if(!hub) return;
+  selectHub(dept);
+  activeCenter = { lat: hub.lat, lng: hub.lng, source: 'cluster' };
+  lastClusterCenter = activeCenter;
+  lastClusterDept = dept;
+  switchToDept(dept);
+}
+
+async function switchToDept(dept){
+  const hub = DEPT_HUBS[dept];
+  if(!hub) return;
+  if(cur !== 'carte') showCarte();
+  // Le hub qu'on quitte (activeDept) ne doit jamais réapparaître en noir : la
+  // sélection au clic (selectHub, § onHubClick) ne concerne que le hub qu'on
+  // ouvre (dept), pas un ancien hub resté sélectionné en mémoire — sans ce
+  // reset, un hub cliqué puis quitté par pan/recherche/géoloc (switchToDept
+  // appelé hors onHubClick) réapparaît figé en #0F172A au lieu du bleu par
+  // défaut. On ne désélectionne PAS si `dept` est déjà le hub sélectionné
+  // (clic direct via onHubClick) : il doit rester noir jusqu'au hideHub différé
+  // ci-dessous.
+  if(selectedHubDept && selectedHubDept !== dept) deselectHub();
+  if(activeDept && activeDept !== dept) showHub(activeDept); // restaure le hub du département précédemment ouvert
+  activeDept = dept; activeCityBBox = null; activeCityLabel = null;
+  drillZoom = null; // § BUG 2 — invalide le seuil de l'ancien département le temps que fitBounds se stabilise sur le nouveau (voir idle ci-dessous)
+  // Un frame de délai avant de masquer le hub : laisse le temps au navigateur de
+  // peindre le hub sélectionné en #0F172A (selectHub, § onHubClick) avant qu'il
+  // ne disparaisse — sans ce délai, hideHub() s'exécute dans le même tick que
+  // selectHub() et le noir n'est jamais rendu à l'écran.
+  requestAnimationFrame(() => hideHub(dept));
+  clearActiveMarkers();
+  const b = hub.bounds;
+  suppressIdle(1200);
+  map.fitBounds(new google.maps.LatLngBounds(
+    { lat: b.minLat, lng: b.minLng },
+    { lat: b.maxLat, lng: b.maxLng }
+  ), 60);
+  // § BUG 2 — capture le zoom une fois la caméra stabilisée sur ce département :
+  // référence pour cacher/réafficher ses markers individuels au dézoom relatif
+  // (drillZoom - 2), indépendamment du seuil global DRILL_ZOOM_THRESHOLD.
+  google.maps.event.addListenerOnce(map, 'idle', () => {
+    if(activeDept !== dept) return; // un autre département a été ouvert entre-temps
+    drillZoom = map.getZoom();
+    updateDrillMarkersVisibility();
+  });
+  drawDeptBoundary(dept);
+  document.getElementById('sidebar-count').textContent = 'Chargement...';
+  document.getElementById('sidebar-list').innerHTML = `<div class="sidebar-loading"><div class="sidebar-spinner"></div>Chargement des auto-écoles...</div>`;
+  await loadDept(dept);
+  if(activeDept === dept) renderActiveView();
+}
+
+/* § point 3 — fondu progressif (200ms) d'un marker via setOpacity, seule API
+   fiable pour animer un google.maps.Marker (pas de vraie transition CSS
+   possible sur son DOM interne géré par Maps). __fadeId permet d'annuler une
+   animation en cours si une nouvelle la remplace avant la fin (ex : zoom
+   avant/arrière rapide) — sans ça, deux boucles rAF sur le même marker se
+   marcheraient dessus. */
+let fadeIdCounter = 0;
+function fadeMarker(marker, from, to, duration, onDone){
+  const id = ++fadeIdCounter;
+  marker.__fadeId = id;
+  const start = performance.now();
+  function step(now){
+    if(marker.__fadeId !== id) return;
+    const t = Math.min((now - start) / duration, 1);
+    marker.setOpacity(from + (to - from) * t);
+    if(t < 1) requestAnimationFrame(step);
+    else if(onDone) onDone();
+  }
+  requestAnimationFrame(step);
+}
+
+/* § BUG 2 — cache les markers individuels du département actif et affiche son
+   hub à la place (noir si sélectionné) dès qu'on dézoome de 2 niveaux ou plus
+   sous drillZoom ; les réaffiche sinon. Ne touche jamais au panel gauche
+   (sidebar-list) ni à activeDept/selectedHubDept — seule la carte change.
+   Appelée au clic +/-, molette ou pincement (tous déclenchent 'zoom_changed'),
+   et une fois après le chargement des markers pour rattraper un dézoom
+   survenu pendant le chargement Supabase du département. Le fondu (§ point 3)
+   ne se relance pas si le marker est déjà dans l'état visé (isVisible check). */
+function updateDrillMarkersVisibility(){
+  if(!activeDept || drillZoom == null) return;
+  const hidden = map.getZoom() < drillZoom - 1.5;
+  Object.values(activeMarkers).forEach(m => {
+    const isVisible = m.getMap() != null;
+    if(hidden && isVisible){
+      fadeMarker(m, m.getOpacity() ?? 1, 0, 200, () => m.setMap(null));
+    } else if(!hidden && !isVisible){
+      m.setOpacity(0);
+      m.setMap(map);
+      fadeMarker(m, 0, 1, 200);
+    }
+  });
+  if(hidden) showHub(activeDept); else hideHub(activeDept);
+}
+
+/* Retour à la vue d'ensemble (clic "Accueil"/recentrer, recherche ville, ou
+   changement de cluster) : efface les markers individuels et le contour,
+   réaffiche le hub du département qui était actif — mais le panel continue
+   TOUJOURS d'afficher des auto-écoles (règle principale) : les plus proches de
+   l'utilisateur si la géoloc est accordée, sinon le dernier cluster cliqué ou
+   le repli national. */
+function returnToOverview(){
+  clearActiveMarkers();
+  clearBoundary();
+  deselectHub();
+  if(activeDept) showHub(activeDept);
+  activeDept = null; activeCityBBox = null; activeCityLabel = null;
+  drillZoom = null;
+  if(userLat != null){
+    activeCenter = { lat: userLat, lng: userLng, source: 'gps' };
+  } else if(lastClusterCenter){
+    activeCenter = { ...lastClusterCenter };
+  } else {
+    activeCenter = { lat: 46.5, lng: 2.5, source: 'france' };
+  }
+  renderActiveView();
+}
+
+/* ══════════════════════════════════════
+   CONTOUR POINTILLÉ (département / ville)
+══════════════════════════════════════ */
+
+/* geo.api.gouv.fr ne donne le contour que commune par commune (une centaine à
+   plusieurs centaines de polygones par département) : les dessiner tels quels
+   ferait apparaître toutes les frontières communales internes (aspect "puzzle",
+   très lourd à rendre). On fusionne donc les contours en une seule enveloppe
+   convexe (turf.convex) — un repère visuel propre, pas un tracé cadastral exact. */
+async function drawDeptBoundary(dept){
+  clearBoundary();
+  try{
+    const res = await fetch(`https://geo.api.gouv.fr/departements/${dept}/communes?fields=contour&format=geojson&geometry=contour`);
+    const geojson = await res.json();
+    const hull = turf.convex(geojson);
+    if(hull) drawDashedPolygon(hull.geometry.coordinates[0].map(([lng,lat]) => ({lat,lng})));
+  }catch(e){ console.error('Erreur contour département', dept, e); }
+}
+
+/* Nominatim (polygon_geojson=1) renvoie directement un Polygon ou MultiPolygon
+   pour la ville recherchée — pas besoin de fusion, juste extraire l'anneau
+   extérieur (le plus grand des polygones si MultiPolygon). */
+function extractOuterRing(geojson){
+  if(!geojson) return null;
+  if(geojson.type === 'Polygon') return geojson.coordinates[0];
+  if(geojson.type === 'MultiPolygon') return geojson.coordinates.reduce((a,b)=> b[0].length > a[0].length ? b : a)[0];
+  return null;
+}
+
+/* Dessine le contour en pointillés bleus : un Polygon invisible (juste pour le
+   fond translucide) + une Polyline avec icônes répétées pour le pointillé —
+   c'est la seule façon réelle de faire des pointillés sur l'API Google Maps
+   (il n'existe pas de strokeDashArray natif). */
+function drawDashedPolygon(path){
+  clearBoundary();
+  if(!path || path.length < 3) return;
+  const closedPath = [...path, path[0]];
+  const lineSymbol = { path: 'M 0,-1 0,1', strokeOpacity: 1, scale: 2 };
+  currentBoundaryFill = new google.maps.Polygon({
+    paths: closedPath,
+    strokeOpacity: 0,
+    fillColor: '#1B4FD8',
+    fillOpacity: 0.04,
+    clickable: false,
+    map,
+  });
+  currentBoundaryLine = new google.maps.Polyline({
+    path: closedPath,
+    strokeOpacity: 0,
+    strokeColor: '#1B4FD8',
+    icons: [{ icon: lineSymbol, offset: '0', repeat: '12px' }],
+    clickable: false,
+    map,
+  });
+}
+function clearBoundary(){
+  if(currentBoundaryFill){ currentBoundaryFill.setMap(null); currentBoundaryFill = null; }
+  if(currentBoundaryLine){ currentBoundaryLine.setMap(null); currentBoundaryLine = null; }
+}
+
+/* ══════════════════════════════════════
+   MARKERS INDIVIDUELS (département/ville actif)
+══════════════════════════════════════ */
+
+/* Marker individuel — même design qu'avant (cercle bleu + icône voiture).
+   Le nombre d'écoles par vue active est naturellement borné (département le
+   plus dense ≈ 370 écoles) : plus besoin de clustering/diffing incrémental. */
+function renderSchoolMarker(s){
   const m = new google.maps.Marker({
     map,
-    position,
-    icon: { url, scaledSize: new google.maps.Size(size, size), anchor: new google.maps.Point(size/2, size/2) },
-    label: {
-      text: String(feature.properties.point_count_abbreviated),
-      color: '#ffffff',
-      fontFamily: 'Inter,sans-serif',
-      fontWeight: '700',
-      fontSize: count < 10 ? '11px' : count < 50 ? '12px' : '13px',
-    },
-    zIndex: Number(google.maps.Marker.MAX_ZINDEX) + count,
+    position: {lat:s.lat, lng:s.lng},
+    icon: { url: mkIconUrl(s.id === selectedSchoolId ? '#0F172A' : undefined), scaledSize: new google.maps.Size(36,36), anchor: new google.maps.Point(18,18) },
+    title: s.name,
+    opacity: 0,
   });
+  fadeMarker(m, 0, 1, 200); // § point 3 — apparition en fondu, jamais un pop brutal
   m.addListener('click', () => {
-    if(cur !== 'carte') showCarte();
-    const leaves = sc.getLeaves(clusterId, Infinity);
-    const clusterBounds = new google.maps.LatLngBounds();
-    leaves.forEach(leaf => {
-      const [leafLng, leafLat] = leaf.geometry.coordinates;
-      clusterBounds.extend({lat: leafLat, lng: leafLng});
-    });
-    map.fitBounds(clusterBounds, {top: 80, bottom: 80, left: 80, right: 80});
+    hlCard(s.id);
+    infoWindow.setContent(popupHTML(s));
+    infoWindow.open({map, anchor: m});
   });
   return m;
 }
 
+function clearActiveMarkers(){
+  Object.values(activeMarkers).forEach(m => m.setMap(null));
+  activeMarkers = {};
+  markers = {};
+  selectedSchoolId = null;
+}
+
+/* Limite défensive reprise de l'ancien MAX_VISIBLE (300 markers simultanés
+   déjà validé au profiling) : au cas où un département filtré resterait très
+   dense, on garde les mieux notées. Le message associé est géré par
+   renderActiveView() (qui centralise tous les messages de sidebar-limit-notice). */
+const MAX_VISIBLE = 300;
+function renderActiveMarkers(list){
+  clearActiveMarkers();
+  const capped = list.length > MAX_VISIBLE ? [...list].sort((a,b)=>(b.score||0)-(a.score||0)).slice(0, MAX_VISIBLE) : list;
+  capped.forEach(s => {
+    if(!s.lat || !s.lng) return;
+    const m = renderSchoolMarker(s);
+    activeMarkers[s.id] = m;
+    markers[s.id] = m;
+  });
+  updateDrillMarkersVisibility(); // § BUG 2 — rattrape un dézoom survenu pendant le chargement Supabase du département
+}
+
 function popupHTML(s){
   const reussite = s.success ? `${s.success}%` : '—';
-  const note = s.rating || '—';
+  const note = s.rating
+    ? `<span onclick="event.stopPropagation();window.openGoogleReviews('${s.id}')" style="color:#D97706;cursor:pointer;" title="Voir les avis Google">★</span> ${s.rating}`
+    : '—';
+  const noteReviews = s.reviews ? `<div style="font-size:8px;color:#5f7588;">(${s.reviews} avis)</div>` : '';
   const permis = (s.permits||['B']).join(', ');
   const website = (s.website||'').replace(/'/g,"\\'");
   return `<div style="background:#fff;border-radius:18px;border:1px solid rgba(25,118,210,.16);width:200px;overflow:hidden;box-shadow:0 6px 20px rgba(0,0,0,0.1);">
@@ -1159,6 +1756,7 @@ function popupHTML(s){
       </div>
       <div style="flex:1;padding:8px 6px;text-align:center;border-right:1px solid rgba(25,118,210,.12);">
         <div style="font-size:14px;font-weight:700;color:#8a620f;">${note}</div>
+        ${noteReviews}
         <div style="font-size:9px;color:#5f7588;">Note</div>
       </div>
       <div style="flex:1;padding:8px 6px;text-align:center;">
@@ -1178,6 +1776,16 @@ window.visitWebsite = function(url) {
     window.open(url, '_blank');
   } else {
     window.location.href = 'site-inexistant.html';
+  }
+};
+
+window.openGoogleReviews = function(id) {
+  const s = SCHOOLS_BY_ID.get(id);
+  if (!s) return;
+  if (s.place_id) {
+    window.open('https://search.google.com/local/reviews?placeid=' + s.place_id, '_blank');
+  } else {
+    window.open('https://www.google.com/search?q=avis+' + encodeURIComponent(s.name + ' ' + s.city), '_blank');
   }
 };
 
@@ -1203,12 +1811,20 @@ function setPage(p){
   updateChromeHeight();
   if(p!=='fiche') setTimeout(()=>google.maps.event.trigger(map,'resize'),50);
 }
-/* La topbar fait toujours 62px (le bandeau Code de la route est maintenant
-   sous elle, jamais au-dessus) ; --carte-chrome-height ajoute la hauteur du
-   bandeau de la page carte quand il est visible, pour que la sidebar/back-btn/
-   recenter-btn restent toujours juste en dessous. */
+/* Le bandeau Code de la route est maintenant AU-DESSUS de la topbar (jamais en
+   dessous) : --chrome-height pousse la topbar vers le bas de la hauteur du
+   bandeau de la page actuellement affichée (home ou carte), ou 0 si aucun
+   bandeau n'est pertinent (fiche/login) ou qu'il est fermé. --carte-chrome-height
+   reste la hauteur totale (topbar 62px + bandeau carte si visible) pour décaler
+   sidebar/back-btn/recenter-btn juste en dessous, peu importe l'ordre d'empilement. */
 function updateChromeHeight(){
-  document.documentElement.style.setProperty('--chrome-height', '62px');
+  let currentBannerHeight = 0;
+  if(cur === 'home' || cur === 'carte'){
+    const currentBanner = document.getElementById(cur === 'carte' ? 'cdr-carte-banner' : 'cdr-home-banner');
+    if(currentBanner && getComputedStyle(currentBanner).display !== 'none') currentBannerHeight = currentBanner.offsetHeight;
+  }
+  document.documentElement.style.setProperty('--chrome-height', currentBannerHeight + 'px');
+
   const carteBanner = document.getElementById('cdr-carte-banner');
   let h2 = 62;
   if(carteBanner && getComputedStyle(carteBanner).display !== 'none') h2 += carteBanner.offsetHeight;
@@ -1220,7 +1836,7 @@ function dismissCdrBanner(page){
   const el = document.getElementById('cdr-' + page + '-banner');
   if(el) el.style.display = 'none';
   localStorage.setItem('cdr-' + page + '-closed', 'true');
-  if(page === 'carte') updateChromeHeight();
+  updateChromeHeight(); // recalcule --chrome-height : la topbar remonte si le bandeau fermé est celui de la page actuelle
 }
 if(localStorage.getItem('cdr-home-closed') !== 'true'){
   const el = document.getElementById('cdr-home-banner');
@@ -1228,28 +1844,57 @@ if(localStorage.getItem('cdr-home-closed') !== 'true'){
 }
 updateChromeHeight();
 
-function showHome(){setPage('home');map.setCenter({lat:46.6034,lng:1.8883});map.setZoom(6)}
+function showHome(){
+  setPage('home');
+  if(activeDept || activeCityBBox) returnToOverview();
+  suppressIdle(1200);
+  map.setCenter({lat:46.6034,lng:1.8883});map.setZoom(6);
+}
+
+/* Bascule vers la carte immédiatement (sans attendre les données, §8), puis
+   affiche soit les hubs (déjà prêts ou dès qu'ils le sont), soit un loader. */
 function showCarte(){
   setPage('carte'); // affiche la page carte immédiatement, sans attendre les données
-  if(SCHOOLS.length === 0){
-    // Les données Supabase (pré-chargées en arrière-plan dès l'arrivée sur le site)
-    // ne sont pas encore arrivées : affiche un indicateur le temps qu'elles chargent.
-    // loadSchools() appelle renderList() dès qu'elles sont prêtes, ce qui remplace
-    // automatiquement cet indicateur par la vraie liste.
+  if(Object.keys(DEPT_HUBS).length === 0){
+    // Les hubs (pré-chargés en arrière-plan dès l'arrivée sur le site, § loadSchoolsLight)
+    // ne sont pas encore prêts : affiche un indicateur. loadSchoolsLight() appelle
+    // showCarteReady() dès qu'ils le sont, ce qui remplace cet indicateur.
     document.getElementById('sidebar-count').textContent = 'Chargement...';
     document.getElementById('sidebar-list').innerHTML = `<div class="sidebar-loading">
       <div class="sidebar-spinner"></div>
       Chargement des auto-écoles...
     </div>`;
   } else {
-    renderList();
+    showCarteReady();
   }
   setTimeout(()=>google.maps.event.trigger(map,'resize'),100);
+  initGeolocation();
 }
+
+/* Appelée quand les hubs sont prêts ET qu'on est sur la page carte : affiche soit
+   la vue active (département/ville) si l'utilisateur y était déjà, soit l'invite
+   "cliquez sur un département" par défaut. */
+function showCarteReady(){
+  if(activeDept || activeCityBBox){
+    renderActiveView();
+  } else {
+    returnToOverview();
+  }
+}
+
 function showLogin(){document.getElementById('page-login').style.display='flex'}
 function closeLogin(){document.getElementById('page-login').style.display='none'}
 
 function recenterMap() {
+  // § point 2 — un département actif ne se ferme PAS ici (pas de returnToOverview) :
+  // son hub reste noir, son panel gauche garde exactement le même ordre. Seul le
+  // zoom vers la vue France déclenche updateDrillMarkersVisibility() (§ BUG 2),
+  // qui cache les markers individuels et affiche le hub à leur place, sans
+  // toucher à activeDept/activeCenter/le panel. activeCityBBox (recherche ville,
+  // pas un département) continue de revenir à la vue d'ensemble comme avant.
+  if(activeCityBBox) returnToOverview();
+  else if(!activeDept) deselectHub();
+  suppressIdle(1200);
   map.panTo({lat: 46.5, lng: 2.5});
   map.setZoom(6);
 }
@@ -1393,7 +2038,7 @@ async function showFiche(id, from){
 function closeFiche(){
   if(ficheFrom==='carte'){
     setPage('carte');
-    renderList();
+    if(activeDept || activeCityBBox) renderActiveView(); else showCarteReady();
     setTimeout(()=>google.maps.event.trigger(map,'resize'),100);
   } else {
     showHome();
@@ -1403,8 +2048,8 @@ function closeFiche(){
 /* ══════════════════════════════════════
    SIDEBAR + FILTRES
 ══════════════════════════════════════ */
-function setSort(v){currentSort=v;renderList()}
-function setPermit(v){permitFilter=v;renderList()}
+function setSort(v){currentSort=v;renderActiveView()}
+function setPermit(v){permitFilter=v;renderActiveView()}
 function setView(v,btn){
   viewMode=v;
   document.querySelectorAll('.vt-btn').forEach(b=>b.classList.remove('on'));
@@ -1412,18 +2057,78 @@ function setView(v,btn){
   const sl=document.getElementById('sidebar-list');
   v==='list'?sl.classList.add('list-mode'):sl.classList.remove('list-mode');
 }
+/* Recherche interne (§1) : Entrée pour valider (même convention que la recherche
+   ville de la topbar — pas de suggestions ni de tolérance à la faute). Cherche
+   d'abord une auto-école par nom (SCHOOLS_LIGHT, déjà chargé nationalement),
+   sinon géocode comme une ville via Nominatim. Effacer revient à la position
+   utilisateur (géoloc accordée) ou à la vue hubs (sinon). */
+const sidebarInputEl = document.getElementById('sidebar-input');
+sidebarInputEl.addEventListener('keydown', function(e){
+  if(e.key !== 'Enter') return;
+  const q = this.value.trim();
+  if(q) smartSearch(q);
+});
+sidebarInputEl.addEventListener('input', function(){
+  if(this.value.trim() === '') revertSearchToDefault();
+});
 
-/* Rayon */
-document.getElementById('radius-slider').addEventListener('input',function(){
-  radiusKm=RADIUS_VALUES[+this.value];
-  document.getElementById('radius-val').textContent=radiusKm===0?'National':radiusKm+'km';
-  const pct=(+this.value/5)*100;
-  this.style.background=`linear-gradient(to right,var(--blue) 0%,var(--blue) ${pct}%,rgba(255,255,255,0.12) ${pct}%,rgba(255,255,255,0.12) 100%)`;
-  if(radiusKm>0&&!userLat){
+async function smartSearch(q){
+  const ql = q.toLowerCase();
+  const schoolMatch = SCHOOLS_LIGHT.find(s => s.name && s.name.toLowerCase().includes(ql));
+  if(schoolMatch && schoolMatch.lat && schoolMatch.lng){
+    activeCenter = { lat: schoolMatch.lat, lng: schoolMatch.lng, source: 'school' };
+    await centerLoadAndFilter(schoolMatch.lat, schoolMatch.lng);
+    return;
+  }
+  try{
+    const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q+',France')}&format=json&limit=1`, {headers:{'User-Agent':'FlexiAuto/1.0'}});
+    const results = await res.json();
+    if(!results.length) return; // rien trouvé : on ne change rien à la vue actuelle
+    const lat = parseFloat(results[0].lat), lng = parseFloat(results[0].lon);
+    activeCenter = { lat, lng, source: 'city' };
+    await centerLoadAndFilter(lat, lng);
+  }catch(e){ console.error('Erreur recherche interne', e); }
+}
+
+/* Effacement de la barre de recherche interne (§ comportement) : géoloc
+   accordée → position GPS ; sinon → dernier cluster cliqué, ou centre France
+   si rien n'a jamais été cliqué. */
+async function revertSearchToDefault(){
+  if(userLat != null){
+    activeCenter = { lat: userLat, lng: userLng, source: 'gps' };
+    await centerLoadAndFilter(userLat, userLng);
+  } else if(lastClusterCenter){
+    activeCenter = { ...lastClusterCenter };
+    await centerLoadAndFilter(lastClusterCenter.lat, lastClusterCenter.lng);
+  } else {
+    activeCenter = { lat: 46.5, lng: 2.5, source: 'france' };
+    renderActiveView();
+    suppressIdle(1200);
+    map.setCenter({lat:46.6034,lng:1.8883});
+    map.setZoom(6);
+  }
+}
+
+/* Partie gauche du slider en bleu #1B4FD8, partie droite en gris #E2E8F0,
+   proportionnellement à la position du curseur. */
+function updateSliderFill(slider) {
+  const val = (slider.value - slider.min) / (slider.max - slider.min) * 100;
+  slider.style.background = `linear-gradient(to right, #1B4FD8 ${val}%, #E2E8F0 ${val}%)`;
+}
+const radiusSliderEl = document.getElementById('radius-slider');
+updateSliderFill(radiusSliderEl); // état initial au chargement
+/* Rayon géographique — comme avant, déplacer le slider demande la géolocalisation
+   s'il elle n'est pas encore connue (la modal d'arrivée sur la carte, cf. §
+   GÉOLOCALISATION, couvre déjà le cas nominal ; ceci reste un filet de secours). */
+radiusSliderEl.addEventListener('input',function(){
+  radiusKm = +this.value;
+  document.getElementById('radius-val').textContent = radiusKm + 'km';
+  updateSliderFill(this);
+  if(!userLat){
     navigator.geolocation.getCurrentPosition(p=>{
-      userLat=p.coords.latitude;userLng=p.coords.longitude;renderList();
-    },()=>renderList());
-  } else renderList();
+      userLat=p.coords.latitude;userLng=p.coords.longitude;renderActiveView();
+    },()=>renderActiveView());
+  } else renderActiveView();
 });
 
 function haversine(lat1,lng1,lat2,lng2){
@@ -1431,20 +2136,119 @@ function haversine(lat1,lng1,lat2,lng2){
   const a=Math.sin(dLat/2)**2+Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLng/2)**2;
   return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
 }
+/* Alias — nom demandé pour le tri par distance depuis activeCenter (§ tri par défaut). */
+function distKm(lat1,lng1,lat2,lng2){ return haversine(lat1,lng1,lat2,lng2); }
 
-function renderList(){
-  let list=[...SCHOOLS];
-  if(sidebarQuery) list=list.filter(s=>s.name.toLowerCase().includes(sidebarQuery)||s.city.toLowerCase().includes(sidebarQuery));
-  if(permitFilter!=='all') list=list.filter(s=>s.permits.includes(permitFilter));
-  if(radiusKm>0&&userLat) list=list.filter(s=>haversine(userLat,userLng,s.lat,s.lng)<=radiusKm);
-  if(currentSort==='score') list.sort((a,b)=>b.score-a.score);
-  else if(currentSort==='rating') list.sort((a,b)=>b.rating-a.rating);
-  else if(currentSort==='success') list.sort((a,b)=>b.success-a.success);
-  else if(currentSort==='price') list.sort((a,b)=>(a.price_min||9999)-(b.price_min||9999));
-  else if(currentSort==='slots') list.sort((a,b)=>b.slots-a.slots);
-  document.getElementById('sidebar-count').textContent=`${list.length} auto-école${list.length>1?'s':''}`;
+/* Le périmètre "brut" avant filtres — dépend de la source d'activeCenter :
+   - bbox de ville (recherche topbar, inchangée) : bbox Nominatim
+   - gps/ville/école (recherche interne ou position utilisateur) : rayon (slider)
+     autour d'activeCenter
+   - cluster (clic hub/département, y compris détecté par pan) : tout le
+     département (lastClusterDept), sans borne de rayon
+   - aucun de ces cas (jamais rien cliqué, géoloc refusée) : repli national
+   Ne renvoie jamais un scope "vide par construction" — règle principale. */
+function getScopedSchools(){
+  if(activeCityBBox){
+    const b = activeCityBBox;
+    return { list: SCHOOLS.filter(s => s.lat>=b.swLat && s.lat<=b.neLat && s.lng>=b.swLng && s.lng<=b.neLng), kind:'city-bbox' };
+  }
+  if(activeCenter.source === 'gps' || activeCenter.source === 'city' || activeCenter.source === 'school'){
+    return { list: SCHOOLS.filter(s => haversine(activeCenter.lat,activeCenter.lng,s.lat,s.lng) <= radiusKm), kind:'radius' };
+  }
+  if(activeCenter.source === 'cluster' && lastClusterDept){
+    return { list: SCHOOLS.filter(s => deptFromZip(s.zip) === lastClusterDept), kind:'dept' };
+  }
+  return { list: NATIONAL_TOP_SCHOOLS, kind:'national' };
+}
+
+/* Filtres + tri (§ règles de tri) :
+   - Permis actif : filtre, puis (si aucun autre critère) trie par distance.
+   - Avis Google / Réussite actif : garde uniquement les écoles ayant cette
+     donnée, trie décroissant par ce critère.
+   - Aucun filtre : trie par distance croissante depuis activeCenter — sauf
+     pour le repli national (preserveOrder), qui garde l'ordre flexi_score déjà
+     renvoyé par Supabase.
+   - Si un filtre actif ne renvoie aucun résultat : repli sur la liste non
+     filtrée triée par distance, avec fallback:true (message dédié). */
+function applyFilters(list, opts){
+  opts = opts || {};
+  let out = list;
+  let filterActive = false;
+
+  if(permitFilter !== 'all'){
+    out = out.filter(s => (s.permits||[]).includes(permitFilter));
+    filterActive = true;
+  }
+  if(currentSort === 'rating'){
+    out = out.filter(s => s.rating != null);
+    filterActive = true;
+  } else if(currentSort === 'success'){
+    out = out.filter(s => s.success != null);
+    filterActive = true;
+  }
+
+  if(filterActive && out.length === 0){
+    const fallbackList = opts.preserveOrder ? [...list] : [...list].sort((a,b)=>
+      distKm(activeCenter.lat,activeCenter.lng,a.lat,a.lng) - distKm(activeCenter.lat,activeCenter.lng,b.lat,b.lng)
+    );
+    return { list: fallbackList, fallback: true };
+  }
+
+  if(currentSort === 'rating') out = [...out].sort((a,b)=>(b.rating||0)-(a.rating||0));
+  else if(currentSort === 'success') out = [...out].sort((a,b)=>(b.success||0)-(a.success||0));
+  else if(!opts.preserveOrder) out = [...out].sort((a,b)=>
+    distKm(activeCenter.lat,activeCenter.lng,a.lat,a.lng) - distKm(activeCenter.lat,activeCenter.lng,b.lat,b.lng)
+  );
+
+  return { list: out, fallback: false };
+}
+
+/* Point d'entrée unique : recalcule le périmètre + filtres, puis met à jour
+   SIMULTANÉMENT la liste (sidebar) et les markers de la carte. Ne laisse jamais
+   le panel vide (règle principale) — repli sur un état de chargement si le
+   repli national lui-même n'est pas encore prêt. */
+function renderActiveView(){
+  const { list: scoped, kind } = getScopedSchools();
+
+  if(scoped.length === 0 && kind === 'national'){
+    // Repli national pas encore chargé (course au démarrage) : état de
+    // chargement plutôt qu'une liste vide, le temps que loadNationalTopSchools()
+    // termine (elle rappelle renderActiveView() à ce moment-là).
+    document.getElementById('sidebar-count').textContent = 'Chargement...';
+    document.getElementById('sidebar-list').innerHTML = `<div class="sidebar-loading"><div class="sidebar-spinner"></div>Chargement des auto-écoles...</div>`;
+    renderActiveMarkers([]);
+    return;
+  }
+
+  const { list: filtered, fallback } = applyFilters(scoped, { preserveOrder: kind === 'national' });
+
+  const label = kind === 'city-bbox' ? (activeCityLabel || 'cette ville') : (kind === 'dept' ? 'ce département' : '');
+  document.getElementById('sidebar-count').textContent = label
+    ? `${filtered.length} auto-école${filtered.length>1?'s':''} dans ${label}`
+    : `${filtered.length} auto-école${filtered.length>1?'s':''}`;
+
+  const notice = document.getElementById('sidebar-limit-notice');
+  if(notice){
+    if(fallback){
+      notice.textContent = 'Aucun résultat pour ce filtre — affichage des plus proches';
+      notice.style.display = 'block';
+    } else if(filtered.length > MAX_VISIBLE){
+      notice.textContent = 'Vue limitée à 300 résultats les mieux notées dans ce secteur';
+      notice.style.display = 'block';
+    } else {
+      notice.style.display = 'none';
+    }
+  }
+
+  renderSidebarList(filtered);
+  renderActiveMarkers(filtered);
+}
+
+function renderSidebarList(list){
   document.getElementById('sidebar-list').innerHTML=list.map((s,i)=>{
     const partnerBadge=s.is_partner?`<div class="badge-slots hot">Partenaire</div>`:'';
+    const noteClick = s.rating ? `onclick="event.stopPropagation();window.openGoogleReviews('${s.id}')" style="cursor:pointer" title="Voir les avis Google"` : '';
+    const noteReviews = s.reviews ? `<br><span style="font-size:8px;">(${s.reviews} avis)</span>` : '';
     return `<div class="s-card" id="c-${s.id}" style="animation-delay:${i*30}ms"
       onclick="focusSchool('${s.id}')">
       ${partnerBadge}
@@ -1461,10 +2265,10 @@ function renderList(){
         <span class="score-val">${s.score||'—'}/10</span>
       </div>
       <div class="s-kpis">
-        <div class="s-kpi">
-          <div class="s-kpi-icon kpi-bg-gold"><svg viewBox="0 0 24 24" fill="none" stroke="#8a620f" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></div>
+        <div class="s-kpi" ${noteClick}>
+          <div class="s-kpi-icon kpi-bg-gold"><svg viewBox="0 0 24 24" fill="${s.rating?'#D97706':'none'}" stroke="${s.rating?'#D97706':'#8a620f'}" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></div>
           <div class="s-kpi-val kpi-gold">${s.rating||'—'}</div>
-          <div class="s-kpi-lbl">Note</div>
+          <div class="s-kpi-lbl">Note${noteReviews}</div>
         </div>
         <div class="s-kpi">
           <div class="s-kpi-icon kpi-bg-green"><svg viewBox="0 0 24 24" fill="none" stroke="#2f7d42" stroke-width="2.5"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22,4 12,14.01 9,11.01"/></svg></div>
@@ -1486,7 +2290,6 @@ function focusSchool(id){
   if(!s) return;
   hlCard(id);
   if(s.lat && s.lng){
-    if(cur !== 'carte') showCarte();
     const m = markers[id];
     const zoom = map.getZoom();
     if (zoom < 14) {
@@ -1515,88 +2318,119 @@ function hlCard(id){
   document.querySelectorAll('.s-card').forEach(c=>c.classList.remove('on'));
   const el=document.getElementById('c-'+id);
   if(el){el.classList.add('on');el.scrollIntoView({behavior:'smooth',block:'nearest'});}
+  selectSchoolMarker(id);
+}
+
+/* Marker sélectionné en #0F172A (bleu nuit), tous les autres restent #1B4FD8 —
+   un seul marker "sélectionné" à la fois. */
+function selectSchoolMarker(id){
+  if(selectedSchoolId && selectedSchoolId !== id && markers[selectedSchoolId]){
+    markers[selectedSchoolId].setIcon({ url: mkIconUrl(), scaledSize: new google.maps.Size(36,36), anchor: new google.maps.Point(18,18) });
+  }
+  selectedSchoolId = id;
+  if(markers[id]){
+    markers[id].setIcon({ url: mkIconUrl('#0F172A'), scaledSize: new google.maps.Size(36,36), anchor: new google.maps.Point(18,18) });
+  }
+}
+
+/* Clic sur la carte vide (§ point 5) : remet le marker sélectionné en
+   #1B4FD8 et retire la surbrillance de sa carte dans le panel — miroir exact
+   de selectSchoolMarker/hlCard. */
+function deselectSchoolMarker(){
+  document.querySelectorAll('.s-card').forEach(c=>c.classList.remove('on'));
+  if(selectedSchoolId && markers[selectedSchoolId]){
+    markers[selectedSchoolId].setIcon({ url: mkIconUrl(), scaledSize: new google.maps.Size(36,36), anchor: new google.maps.Point(18,18) });
+  }
+  selectedSchoolId = null;
 }
 
 /* ══════════════════════════════════════
    SEARCH
 ══════════════════════════════════════ */
-const sinput=document.getElementById('si'), sdd=document.getElementById('sdd');
-let searchTimer=null;
+const sinput=document.getElementById('si'), searchMsg=document.getElementById('search-msg');
 
-sinput.addEventListener('input',function(){
-  clearTimeout(searchTimer);
-  const q=this.value.trim();
-  if(!q){sdd.style.display='none';return;}
-  const localRes=SCHOOLS.filter(s=>
-    s.name.toLowerCase().includes(q.toLowerCase())||
-    s.city.toLowerCase().includes(q.toLowerCase())
-  ).slice(0,4);
-  renderSearchDD(localRes,[]);
-  searchTimer=setTimeout(async()=>{
-    try{
-      const res=await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q+' France')}&format=json&limit=3&countrycodes=fr&accept-language=fr`,{headers:{'User-Agent':'FlexiAuto/1.0'}});
-      const geoRes=await res.json();
-      renderSearchDD(localRes,geoRes);
-    }catch(e){}
-  },400);
+/* Recherche ville simplifiée (§5) : pas de suggestions, pas de tolérance à la
+   faute — l'utilisateur tape le nom exact et valide avec Entrée. */
+sinput.addEventListener('keydown', function(e){
+  if(e.key !== 'Enter') return;
+  const q = this.value.trim();
+  if(!q) return;
+  searchCity(q);
 });
+sinput.addEventListener('input', function(){ searchMsg.style.display='none'; });
 
-function renderSearchDD(localRes,geoRes){
-  const localHTML=localRes.map(s=>`
-    <div class="s-item" onclick="searchGo('${s.id}')">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99z"/></svg>
-      <div><div style="font-weight:500">${s.name}</div><div style="font-size:11px;color:var(--muted2)">${s.address||s.city}</div></div>
-      <span class="s-city">${s.city}</span>
-    </div>`).join('');
-  const geoHTML=geoRes.map(r=>{
-    const label=r.display_name.split(',').slice(0,3).join(', ');
-    const type=r.class==='boundary'?'Département/Région':r.type==='city'||r.type==='town'?'Ville':'Lieu';
-    return `<div class="s-item" onclick="zoomToPlace(${r.lat},${r.lon},${JSON.stringify(r.boundingbox||null)})">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
-      <div><div style="font-weight:500">${label}</div></div>
-      <span class="s-city">${type}</span>
-    </div>`;
-  }).join('');
-  if(!localHTML&&!geoHTML){sdd.style.display='none';return;}
-  sdd.innerHTML=
-    (localHTML?'<div style="padding:6px 12px 3px;font-size:10px;color:var(--muted2);text-transform:uppercase;letter-spacing:.5px;font-weight:600">Auto-écoles</div>'+localHTML:'')+
-    (geoHTML?'<div style="padding:6px 12px 3px;font-size:10px;color:var(--muted2);text-transform:uppercase;letter-spacing:.5px;font-weight:600;border-top:1px solid var(--border)">Villes & lieux</div>'+geoHTML:'');
-  sdd.style.display='block';
+function showSearchMsg(text){
+  searchMsg.textContent = text;
+  searchMsg.style.display = text ? 'block' : 'none';
 }
 
-function zoomToPlace(lat,lng,bbox){
-  sinput.value='';sdd.style.display='none';
-  if(cur!=='carte') showCarte();
-  setTimeout(()=>{
-    if(bbox&&bbox.length===4){
-      const b=bbox.map(Number);
-      const sw = new google.maps.LatLng(b[0], b[2]);
-      const ne = new google.maps.LatLng(b[1], b[3]);
-      map.fitBounds(new google.maps.LatLngBounds(sw, ne), 40);
-    } else {
-      map.panTo({lat:parseFloat(lat), lng:parseFloat(lng)});
-      map.setZoom(12);
-    }
-  },300);
+/* Départements couvrant un bbox donné, déduits de SCHOOLS_LIGHT (déjà chargé,
+   pas d'appel réseau) — utilisé pour savoir quel(s) loadDept() déclencher. */
+function deptsForBBox(b){
+  const depts = new Set();
+  SCHOOLS_LIGHT.forEach(s => {
+    if(s.lat>=b.swLat && s.lat<=b.neLat && s.lng>=b.swLng && s.lng<=b.neLng) depts.add(deptFromZip(s.zip));
+  });
+  return [...depts];
 }
 
-function searchGo(id){
-  sinput.value='';sdd.style.display='none';
-  if(cur!=='carte') showCarte();
-  setTimeout(()=>focusSchool(id),300);
+async function searchCity(q){
+  showSearchMsg('');
+  try{
+    const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q+',France')}&format=json&limit=1&polygon_geojson=1`, {headers:{'User-Agent':'FlexiAuto/1.0'}});
+    const results = await res.json();
+    if(!results.length){ showSearchMsg('Ville non trouvée'); return; }
+
+    const r = results[0];
+    const bboxNum = r.boundingbox.map(Number); // [south, north, west, east]
+    const bbox = { swLat:bboxNum[0], neLat:bboxNum[1], swLng:bboxNum[2], neLng:bboxNum[3] };
+
+    if(cur !== 'carte') showCarte();
+    if(activeDept) showHub(activeDept); // restaure le hub si on arrivait d'un département ouvert
+    activeDept = null;
+    activeCityBBox = bbox;
+    activeCityLabel = (r.display_name||q).split(',')[0];
+    clearActiveMarkers();
+    // Pas besoin de masquer les hubs ici : fitBounds zoome sur le bbox précis
+    // de la ville, les hubs des autres départements sortent naturellement du cadre.
+
+    setTimeout(()=>{
+      suppressIdle(1200);
+      map.fitBounds(new google.maps.LatLngBounds(
+        {lat:bbox.swLat, lng:bbox.swLng}, {lat:bbox.neLat, lng:bbox.neLng}
+      ), 40);
+    }, cur==='carte' ? 0 : 300);
+
+    const ring = extractOuterRing(r.geojson);
+    if(ring) drawDashedPolygon(ring.map(([lng,lat]) => ({lat,lng})));
+
+    document.getElementById('sidebar-count').textContent = 'Chargement...';
+    document.getElementById('sidebar-list').innerHTML = `<div class="sidebar-loading"><div class="sidebar-spinner"></div>Chargement des auto-écoles...</div>`;
+    await Promise.all(deptsForBBox(bbox).map(loadDept));
+    if(activeCityBBox === bbox) renderActiveView();
+
+  }catch(e){
+    console.error('Erreur recherche ville', e);
+    showSearchMsg('Ville non trouvée');
+  }
 }
-document.addEventListener('click',e=>{if(!document.getElementById('sw').contains(e.target))sdd.style.display='none';});
-document.getElementById('sidebar-input').addEventListener('input',function(){sidebarQuery=this.value.toLowerCase().trim();renderList();});
 
 /* ══════════════════════════════════════
    INIT
 ══════════════════════════════════════ */
 function bootMap(){
   initMap();
-  loadSchools();
-  // Arrivée depuis savoir-plus.html ("Trouver mon auto-école") : ouvre directement
-  // la page carte au lieu de l'accueil.
-  if(new URLSearchParams(location.search).get('go') === 'carte'){
+  // Pré-charge les données légères (hubs) dès l'arrivée sur le site, dès la page
+  // d'accueil, sans bloquer son affichage (§8) — loadSchoolsLight() appelle
+  // renderHubs() puis, si on est déjà sur la carte, showCarteReady().
+  loadSchoolsLight();
+  loadNationalTopSchools(); // repli "jamais vide" — en parallèle, prêt le plus tôt possible
+  // Arrivée depuis nos-offres.html ("Trouver mon auto-école") : ouvre directement
+  // la page carte au lieu de l'accueil. ?inscription=eleve (overlay d'inscription
+  // élève) doit aussi afficher la carte en fond plutôt que le hero d'accueil —
+  // même logique que ?go=carte.
+  var bootParams = new URLSearchParams(location.search);
+  if(bootParams.get('go') === 'carte' || bootParams.get('inscription') === 'eleve'){
     showCarte();
   }
 }

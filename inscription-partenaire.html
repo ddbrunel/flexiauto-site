@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rejoignez FlexiAuto — Devenez partenaire</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.7.0/dist/tabler-icons.min.css">
+<style>
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{font-family:'Inter',system-ui,-apple-system,sans-serif;color:#0F172A;background:#F5F8FF;
+    -webkit-font-smoothing:antialiased;line-height:1.5;}
+  a{color:inherit;text-decoration:none}
+  :root{--bleu:#1B4FD8;--bleu-clair:#2158E6;--vert:#16A34A;--vert-clair:#1CB255;--sombre:#0F172A;--texte-doux:#64748B;--footer:#94A3B8;--bord:#E7ECF7;}
+
+  /* Bandeau + topbar : dimensions identiques à index.html / nos-offres.html /
+     partenaire.html / rendez-vous.html (padding 7px 16px, font-size 12px,
+     bouton interne padding 3px 12px / font-size 11px, close 18×18px, #header 62px). */
+  .promo{background:linear-gradient(180deg,var(--bleu-clair),var(--bleu));color:#fff;display:flex;align-items:center;justify-content:center;gap:10px;padding:7px 16px;font-size:12px;font-weight:500;box-shadow:0 1px 2px rgba(15,23,42,.2);}
+  .promo .btn-essai{background:rgba(255,255,255,.9);color:var(--bleu);font-weight:600;font-size:11px;padding:3px 12px;border-radius:12px;white-space:nowrap;}
+  .promo .close{width:18px;height:18px;border-radius:50%;background:rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;font-size:10px;line-height:1;cursor:pointer;border:none;color:#fff;flex-shrink:0}
+  #header{padding:0 28px;height:62px;display:flex;align-items:center;gap:18px;background:linear-gradient(180deg,rgba(244,251,255,.96) 0%,rgba(244,251,255,.78) 64%,rgba(244,251,255,0) 100%);}
+  .logo{display:flex;align-items:center;flex-shrink:0;cursor:pointer;text-decoration:none}
+  .logo-img{height:38px;width:auto;display:block}
+  .h-nav{display:flex;align-items:center;gap:10px;margin-left:auto}
+  .h-btn-info{display:flex;align-items:center;gap:4px;height:34px;padding:0 12px;border-radius:8px;font-size:13px;color:#374151;background:transparent;border:none;cursor:pointer;font-family:'Inter',sans-serif;transition:background .15s}
+  .h-btn-info:hover{background:rgba(0,0,0,.05)}
+  .h-btn{padding:9px 20px;border-radius:100px;font-size:13px;font-weight:500;cursor:pointer;font-family:'Inter',sans-serif;transition:all .2s;background:rgba(255,255,255,.86);color:#2e536f;border:1px solid rgba(25,118,210,.16);box-shadow:0 8px 22px rgba(31,86,125,.08)}
+  .h-btn:hover{background:#fff;color:#17324d;border-color:rgba(25,118,210,.32);box-shadow:0 12px 30px rgba(31,86,125,.13)}
+  .h-btn.primary{background:linear-gradient(135deg,#1976d2,#0d5fb3);color:#fff;border-color:rgba(13,95,179,.25);box-shadow:0 10px 24px rgba(25,118,210,.22)}
+  .h-btn.primary:hover{background:linear-gradient(135deg,#2184df,#0d5fb3);box-shadow:0 14px 32px rgba(25,118,210,.28)}
+
+  /* ============================ HERO ============================ */
+  .ip-hero{padding:52px 28px 30px;text-align:center;}
+  .ip-hero .badge{display:inline-flex;align-items:center;gap:8px;font-size:12.5px;font-weight:700;color:#fff;
+    background:linear-gradient(120deg,var(--bleu),var(--vert));padding:8px 16px;border-radius:999px;margin-bottom:18px;
+    box-shadow:0 12px 26px -12px rgba(27,79,216,.55);}
+  .ip-hero h1{font-size:clamp(26px,3.6vw,36px);font-weight:800;letter-spacing:-0.03em;color:var(--sombre)}
+  .ip-hero p{font-size:15px;color:var(--texte-doux);margin-top:10px;max-width:460px;margin-left:auto;margin-right:auto}
+
+  /* ============================ FORM ============================ */
+  .ip-wrap{max-width:640px;margin:0 auto;padding:0 20px 60px}
+
+  .form-section{background:#fff;border-radius:16px;padding:26px 24px;margin-bottom:18px;
+    box-shadow:0 18px 46px rgba(31,86,125,.12),0 2px 10px rgba(31,86,125,.06);border:1px solid var(--bord)}
+  .form-section h2{font-size:16px;font-weight:800;color:var(--sombre);letter-spacing:-0.01em}
+  .form-section .opt-lbl{font-size:11px;font-weight:600;color:#94A3B8;text-transform:uppercase;letter-spacing:.04em;margin-left:6px}
+  .form-section .hint{font-size:12.5px;color:var(--texte-doux);margin-top:4px;margin-bottom:18px}
+
+  .field-row{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .field{display:flex;flex-direction:column;gap:6px;margin-bottom:14px}
+  .field:last-child{margin-bottom:0}
+  .field label{font-size:12.5px;font-weight:700;color:#374151}
+  .field input{height:42px;padding:0 14px;border-radius:10px;border:1px solid rgba(27,79,216,.16);
+    font-family:'Inter',sans-serif;font-size:14px;color:#0F172A;background:#fff;
+    transition:border-color .15s,box-shadow .15s;width:100%}
+  .field input:focus{outline:none;border-color:var(--bleu);box-shadow:0 0 0 4px rgba(27,79,216,.10)}
+  .field.has-error input{border-color:#DC2626}
+  .field.has-error input:focus{box-shadow:0 0 0 4px rgba(220,38,38,.10)}
+  .field .err{font-size:11.5px;color:#DC2626;display:none}
+  .field.has-error .err{display:block}
+
+  /* Sélecteur de durée — mêmes classes/valeurs que la carte tarif de partenaire.html */
+  .dur-select{display:flex;gap:8px;background:#F1F5FB;border-radius:14px;padding:6px}
+  .dur-btn{flex:1;text-align:center;padding:14px 8px;border-radius:10px;font-size:13px;font-weight:700;color:#64748B;
+    cursor:pointer;border:none;background:transparent;font-family:'Inter',sans-serif;transition:all .2s;line-height:1.3}
+  .dur-btn small{display:block;font-size:11px;font-weight:600;opacity:.75;margin-top:3px}
+  .dur-btn.active{background:#fff;color:var(--bleu);box-shadow:0 6px 16px -6px rgba(27,79,216,.35)}
+
+  .btn-submit{
+    display:flex;align-items:center;justify-content:center;gap:9px;width:100%;
+    font-size:15px;font-weight:700;padding:16px 28px;border-radius:100px;border:none;cursor:pointer;
+    background:linear-gradient(180deg,var(--bleu-clair),var(--bleu));color:#fff;
+    box-shadow:0 18px 34px -14px rgba(27,79,216,.65),0 1px 0 rgba(255,255,255,.25) inset;
+    transition:filter .15s,transform .15s;font-family:'Inter',sans-serif;
+  }
+  .btn-submit:hover{filter:brightness(1.05);transform:translateY(-2px)}
+  .btn-submit:disabled{opacity:.65;cursor:not-allowed;transform:none;filter:none}
+
+  .form-msg{margin-top:14px;padding:13px 16px;border-radius:12px;font-size:13.5px;font-weight:600;display:none;text-align:center}
+  .form-msg.success{display:block;background:#E6F7EC;color:#15803D;border:1px solid #BBEBCB}
+  .form-msg.error{display:block;background:#FEECEC;color:#B91C1C;border:1px solid #F8CACA}
+
+  .footer{padding:20px 28px;border-top:1px solid #EDF0F6;background:#F8FAFD;text-align:center;font-size:11px;color:var(--footer);}
+  .footer a{color:var(--footer);text-decoration:underline;text-underline-offset:2px;text-decoration-color:#CBD5E1}
+  .footer a:hover{color:#64748B}
+
+  @media (max-width:600px){
+    .promo{flex-wrap:wrap;gap:10px;font-size:12px;text-align:center}
+    #header{padding:0 18px}
+    .ip-hero{padding:36px 20px 24px}
+    .ip-wrap{padding:0 14px 44px}
+    .field-row{grid-template-columns:1fr}
+    .dur-select{flex-direction:column}
+  }
+</style>
+</head>
+<body>
+  <div class="promo" id="cdr-ip-banner">
+    <span>🎯 Code de la route — Questions officielles · Moins cher que la concurrence</span>
+    <a href="#" class="btn-essai" onclick="alert('Code de la route — bientôt disponible !');return false;">Essayer gratuit</a>
+    <button class="close" aria-label="Fermer" onclick="this.closest('.promo').style.display='none';localStorage.setItem('cdr-ip-closed','true');">✕</button>
+  </div>
+  <div class="topbar-wrap">
+    <div id="header">
+      <a class="logo" href="index.html">
+        <img src="logo-flexiauto.png" alt="FlexiAuto" class="logo-img">
+      </a>
+      <div style="flex:1"></div>
+      <div class="h-nav">
+        <a class="h-btn-info" href="partenaire.html">← Retour</a>
+        <a class="h-btn primary" href="connexion.html">Se connecter</a>
+      </div>
+    </div>
+  </div>
+
+  <section class="ip-hero">
+    <span class="badge">⚡ Candidature en 2 minutes</span>
+    <h1>Rejoignez FlexiAuto</h1>
+    <p>Un conseiller étudie votre candidature et vous recontacte sous 24h — sans engagement à cette étape.</p>
+  </section>
+
+  <div class="ip-wrap">
+    <form id="ip-form" novalidate>
+
+      <div class="form-section">
+        <h2>Votre auto-école</h2>
+        <p class="hint">Les informations qui figureront sur votre fiche FlexiAuto.</p>
+
+        <div class="field">
+          <label for="nom_ecole">Nom de l'auto-école</label>
+          <input type="text" id="nom_ecole" name="nom_ecole" required autocomplete="organization">
+          <span class="err">Merci d'indiquer le nom de votre auto-école.</span>
+        </div>
+
+        <div class="field">
+          <label for="siret">SIRET</label>
+          <input type="text" id="siret" name="siret" required inputmode="numeric" placeholder="14 chiffres">
+          <span class="err">Le SIRET doit contenir 14 chiffres.</span>
+        </div>
+
+        <div class="field">
+          <label for="adresse">Adresse</label>
+          <input type="text" id="adresse" name="adresse" required autocomplete="street-address">
+          <span class="err">Merci d'indiquer l'adresse de votre établissement.</span>
+        </div>
+
+        <div class="field-row">
+          <div class="field">
+            <label for="ville">Ville</label>
+            <input type="text" id="ville" name="ville" required autocomplete="address-level2">
+            <span class="err">Merci d'indiquer la ville.</span>
+          </div>
+          <div class="field">
+            <label for="code_postal">Code postal</label>
+            <input type="text" id="code_postal" name="code_postal" required inputmode="numeric" placeholder="75001" autocomplete="postal-code">
+            <span class="err">Code postal invalide.</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-section">
+        <h2>Vous, le gérant</h2>
+        <p class="hint">Le conseiller FlexiAuto vous contactera directement.</p>
+
+        <div class="field-row">
+          <div class="field">
+            <label for="gerant_prenom">Prénom</label>
+            <input type="text" id="gerant_prenom" name="gerant_prenom" required autocomplete="given-name">
+            <span class="err">Merci d'indiquer votre prénom.</span>
+          </div>
+          <div class="field">
+            <label for="gerant_nom">Nom</label>
+            <input type="text" id="gerant_nom" name="gerant_nom" required autocomplete="family-name">
+            <span class="err">Merci d'indiquer votre nom.</span>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="email">Email professionnel</label>
+          <input type="email" id="email" name="email" required autocomplete="email">
+          <span class="err">Merci d'indiquer un email valide.</span>
+        </div>
+
+        <div class="field">
+          <label for="telephone">Téléphone</label>
+          <input type="tel" id="telephone" name="telephone" required autocomplete="tel" placeholder="06 12 34 56 78">
+          <span class="err">Merci d'indiquer un numéro de téléphone.</span>
+        </div>
+      </div>
+
+      <div class="form-section">
+        <h2>Informations complémentaires <span class="opt-lbl">Optionnel</span></h2>
+        <p class="hint">Ces éléments aident le conseiller à préparer l'appel, rien n'est bloquant.</p>
+
+        <div class="field">
+          <label for="agrement">Numéro d'agrément préfectoral</label>
+          <input type="text" id="agrement" name="agrement">
+        </div>
+        <div class="field">
+          <label for="site_actuel">Site internet actuel</label>
+          <input type="url" id="site_actuel" name="site_actuel" placeholder="https://">
+        </div>
+        <div class="field">
+          <label for="nb_eleves_an">Nombre d'élèves par an</label>
+          <input type="text" id="nb_eleves_an" name="nb_eleves_an" placeholder="ex : 80">
+        </div>
+      </div>
+
+      <div class="form-section">
+        <h2>Votre engagement</h2>
+        <p class="hint">Choisissez la durée — vous pourrez toujours en discuter avec votre conseiller.</p>
+
+        <div class="dur-select" role="group" aria-label="Durée d'engagement">
+          <button type="button" class="dur-btn" data-duree="trimestre" data-price="49,99€">1 trimestre<small>49,99€/mois</small></button>
+          <button type="button" class="dur-btn" data-duree="semestre" data-price="46,99€">1 semestre<small>46,99€/mois</small></button>
+          <button type="button" class="dur-btn" data-duree="annuel" data-price="44,99€">1 an<small>44,99€/mois</small></button>
+        </div>
+        <input type="hidden" id="duree_engagement" name="duree_engagement" value="trimestre">
+      </div>
+
+      <button type="submit" class="btn-submit" id="submit-btn">Valider ma candidature →</button>
+      <div class="form-msg" id="form-msg" role="status" aria-live="polite"></div>
+    </form>
+  </div>
+
+  <footer class="footer">
+    © 2026 FlexiAuto ·
+    <a href="#">Politique de confidentialité</a> ·
+    <a href="#">Mentions légales</a> ·
+    <a href="#">CGU</a> ·
+    <a href="#">Cookies</a> ·
+    <a href="#">Contact</a>
+  </footer>
+
+  <script>
+    (function(){
+      if(localStorage.getItem('cdr-ip-closed') === 'true'){
+        var banner = document.getElementById('cdr-ip-banner');
+        if(banner) banner.style.display = 'none';
+      }
+    })();
+
+    // ==================== PRÉ-REMPLISSAGE DEPUIS UN PROSPECT ====================
+    // Si l'auto-école s'est déjà identifiée comme prospect sur connexion.html
+    // (bouton "Devenir partenaire maintenant"), ses infos sont passées via
+    // sessionStorage (jamais via l'URL, pour ne pas exposer email/téléphone)
+    // et préremplissent le formulaire — les champs restent modifiables, et la
+    // donnée est effacée après lecture (usage unique).
+    (function(){
+      var raw = sessionStorage.getItem('flexiauto_prospect_data');
+      if (!raw) return;
+      sessionStorage.removeItem('flexiauto_prospect_data');
+
+      var data;
+      try { data = JSON.parse(raw); } catch (e) { return; }
+
+      var fieldMap = {
+        nom_ecole: 'nom_ecole',
+        ville: 'ville',
+        gerant_prenom: 'gerant_prenom',
+        gerant_nom: 'gerant_nom',
+        email: 'email',
+        telephone: 'telephone'
+      };
+
+      Object.keys(fieldMap).forEach(function(key){
+        var input = document.getElementById(fieldMap[key]);
+        if (input && data[key]) input.value = data[key];
+      });
+    })();
+
+    // ==================== SÉLECTEUR DE DURÉE ====================
+    // Préselectionne la durée passée en paramètre d'URL (?duree=trimestre|semestre|annuel)
+    // depuis la carte tarif de partenaire.html, sinon "trimestre" par défaut.
+    (function(){
+      var buttons = Array.prototype.slice.call(document.querySelectorAll('.dur-btn'));
+      var hidden = document.getElementById('duree_engagement');
+      var params = new URLSearchParams(window.location.search);
+      var initial = params.get('duree');
+      var valid = ['trimestre', 'semestre', 'annuel'];
+      if (valid.indexOf(initial) === -1) initial = 'trimestre';
+
+      function select(duree){
+        buttons.forEach(function(b){ b.classList.toggle('active', b.dataset.duree === duree); });
+        hidden.value = duree;
+      }
+
+      buttons.forEach(function(btn){
+        btn.addEventListener('click', function(){ select(btn.dataset.duree); });
+      });
+
+      select(initial);
+    })();
+
+    // ==================== ENVOI DU FORMULAIRE ====================
+    (function(){
+      var SUPABASE_URL = "https://nlzplxhetonxvcdckmcq.supabase.co";
+      var SUPABASE_ANON_KEY = "sb_publishable_er7mVFa1fYYWLwGFCacZ8Q_JWX_uyCF";
+
+      var form = document.getElementById('ip-form');
+      var submitBtn = document.getElementById('submit-btn');
+      var formMsg = document.getElementById('form-msg');
+
+      var requiredFields = ['nom_ecole', 'siret', 'adresse', 'ville', 'code_postal', 'gerant_prenom', 'gerant_nom', 'email', 'telephone'];
+
+      function clearErrors(){
+        requiredFields.forEach(function(name){
+          document.getElementById(name).closest('.field').classList.remove('has-error');
+        });
+      }
+
+      function markError(name){
+        document.getElementById(name).closest('.field').classList.add('has-error');
+      }
+
+      function validate(){
+        clearErrors();
+        var valid = true;
+
+        requiredFields.forEach(function(name){
+          var input = document.getElementById(name);
+          if (!input.value.trim()){
+            markError(name);
+            valid = false;
+          }
+        });
+
+        var email = document.getElementById('email');
+        var emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (email.value.trim() && !emailPattern.test(email.value.trim())){
+          markError('email');
+          valid = false;
+        }
+
+        var siret = document.getElementById('siret');
+        var siretDigits = siret.value.replace(/\s/g, '');
+        if (siret.value.trim() && !/^\d{14}$/.test(siretDigits)){
+          markError('siret');
+          valid = false;
+        }
+
+        var codePostal = document.getElementById('code_postal');
+        if (codePostal.value.trim() && !/^\d{5}$/.test(codePostal.value.trim())){
+          markError('code_postal');
+          valid = false;
+        }
+
+        return valid;
+      }
+
+      form.addEventListener('submit', function(e){
+        e.preventDefault();
+        formMsg.className = 'form-msg';
+        formMsg.textContent = '';
+
+        if (!validate()){
+          formMsg.classList.add('error');
+          formMsg.textContent = "Merci de corriger les champs indiqués en rouge avant de continuer.";
+          return;
+        }
+
+        var payload = {
+          nom_ecole: document.getElementById('nom_ecole').value.trim(),
+          siret: document.getElementById('siret').value.replace(/\s/g, ''),
+          adresse: document.getElementById('adresse').value.trim(),
+          ville: document.getElementById('ville').value.trim(),
+          code_postal: document.getElementById('code_postal').value.trim(),
+          gerant_nom: document.getElementById('gerant_nom').value.trim(),
+          gerant_prenom: document.getElementById('gerant_prenom').value.trim(),
+          email: document.getElementById('email').value.trim(),
+          telephone: document.getElementById('telephone').value.trim(),
+          agrement: document.getElementById('agrement').value.trim() || null,
+          site_actuel: document.getElementById('site_actuel').value.trim() || null,
+          nb_eleves_an: document.getElementById('nb_eleves_an').value.trim() || null,
+          duree_engagement: document.getElementById('duree_engagement').value
+        };
+
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Envoi en cours…';
+
+        function resetButton(){
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'Valider ma candidature →';
+        }
+
+        var applicationSaved = false;
+
+        // 1) Enregistrement de la candidature via l'Edge Function submit-partner-application
+        // (service_role côté serveur — l'insert direct en clé anon est bloqué par ce
+        // projet Supabase quelle que soit la policy RLS, cf. diagnostic).
+        fetch(SUPABASE_URL + '/functions/v1/submit-partner-application', {
+          method: 'POST',
+          headers: {
+            'apikey': SUPABASE_ANON_KEY,
+            'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(payload)
+        })
+        .then(function(res){
+          if (!res.ok){
+            return res.text().then(function(text){
+              throw new Error(text || ('Erreur ' + res.status));
+            });
+          }
+          return res.json();
+        })
+        .then(function(data){
+          // La candidature est enregistrée dans partner_applications.
+          // NOTIFICATION EMAIL (flexiauto.contact@gmail.com) : à brancher ici
+          // côté serveur, pas côté front — un Database Webhook Supabase sur
+          // "INSERT" dans partner_applications déclenchera une Edge Function
+          // (Resend) qui enverra l'email. Aucun appel à ajouter dans ce fichier.
+          var applicationId = data && data.id;
+          applicationSaved = true;
+
+          submitBtn.textContent = 'Redirection vers le paiement…';
+
+          // 2) Création de la session Stripe Checkout via l'Edge Function
+          // Supabase (la clé secrète Stripe reste côté serveur, jamais ici).
+          return fetch(SUPABASE_URL + '/functions/v1/create-checkout-session', {
+            method: 'POST',
+            headers: {
+              'apikey': SUPABASE_ANON_KEY,
+              'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              application_id: applicationId,
+              duree_engagement: payload.duree_engagement,
+              origin: window.location.origin
+            })
+          });
+        })
+        .then(function(res){
+          if (!res.ok){
+            return res.text().then(function(text){
+              throw new Error(text || ('Erreur ' + res.status));
+            });
+          }
+          return res.json();
+        })
+        .then(function(data){
+          // 3) Redirection vers la page de paiement hébergée par Stripe.
+          window.location.href = data.url;
+        })
+        .catch(function(err){
+          formMsg.classList.add('error');
+          formMsg.textContent = applicationSaved
+            ? "Votre candidature a bien été enregistrée, mais une erreur est survenue lors de la redirection vers le paiement. Merci de réessayer dans quelques instants."
+            : "Une erreur est survenue lors de l'enregistrement de votre candidature. Merci de vérifier vos informations et de réessayer.";
+          resetButton();
+        });
+      });
+    })();
+  </script>
+</body>
+</html>

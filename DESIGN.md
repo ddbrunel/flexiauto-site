@@ -115,7 +115,14 @@ Palette "printemps professionnelle" : dominante bleue sur fond blanc/bleu très 
 - **Muted** (#7b91a3 / #5f7588): labels, métadonnées, placeholders.
 
 ### Named Rules
-**La Règle du Vert Rare.** Le vert sauge ne décore jamais une surface par défaut — il apparaît uniquement pour confirmer un fait positif (réussite, disponibilité, sélection). Si un élément vert n'annonce pas une bonne nouvelle, ce n'est pas la bonne couleur.
+**La Règle du Vert Rare.** Le vert sauge ne décore jamais une surface par défaut — il apparaît uniquement pour confirmer un fait positif (réussite, disponibilité, sélection). Si un élément vert n'annonce pas une bonne nouvelle, ce n'est pas la bonne couleur. **Exception documentée — colonne "auto-écoles" de `nos-offres.html`** (anciennement `savoir-plus.html`) : sur cette page uniquement, le vert (#16A34A) est utilisé comme couleur de marque à parts égales avec le bleu, pour distinguer visuellement la colonne "Pour les auto-écoles" de la colonne "Pour les élèves" (kicker, chiffres, bordures, ombres, CTA). Ce n'est pas un signal de réussite mais un code couleur de section. Décision produit assumée pour cette page marketing à deux colonnes ; la règle reste pleinement en vigueur partout ailleurs (carte, fiches, comparateur).
+
+### Exception documentée — Palette `nos-offres.html`
+Cette page marketing (anciennement `savoir-plus.html`) utilise une palette distincte de la palette produit ci-dessus (héritée de sa V1 et reconduite sur demande) plutôt que #1976d2/#6fbf73/#f4fbff :
+- **Bleu** (#1B4FD8) : couleur de marque et d'action — logo, boutons primaires, colonne "élèves".
+- **Vert** (#16A34A) : couleur de marque de la colonne "auto-écoles" (voir exception ci-dessus), pas un signal de réussite sur cette page.
+- **Sombre** (#0F172A) : fond du hero (dégradé sombre), au lieu du fond clair `--bg` (#f4fbff) utilisé partout ailleurs dans le produit.
+Ne pas propager cette palette au reste du site (carte, fiches, comparateur, compte) : elle est scopée à `nos-offres.html`. La page `partenaire.html` reprend également ces trois couleurs (bleu/vert/sombre) pour rester cohérente avec `nos-offres.html`, dont elle est le prolongement direct côté auto-écoles.
 
 ## 3. Typography
 
@@ -148,7 +155,7 @@ Le système est plat par défaut : aucune surface n'utilise `backdrop-filter`. L
 ## 5. Components
 
 ### Buttons
-- **Shape:** pilule (radius 100px) pour toutes les actions principales ; carré arrondi (8–10px) pour les boutons tertiaires/filtres.
+- **Shape:** pilule (radius 100px) pour toutes les actions principales ; carré arrondi (8–10px) pour les boutons tertiaires/filtres. **Exception documentée — CTA de `nos-offres.html`** (anciennement `savoir-plus.html`) : les deux CTA de bas de colonne ("Trouver mon auto-école", "Devenir partenaire FlexiAuto") utilisent un radius de 13px plutôt que la pilule, pour rester alignés visuellement avec le radius 16px des cartes d'arguments juste au-dessus. Scopé à cette page ; les CTA du reste du produit (fiche, inscription, connexion) restent en pilule.
 - **Primary:** dégradé bleu (`linear-gradient(135deg, #1976d2, #0d5fb3)`), texte blanc, padding `9px 20px`, ombre bleue portée. Utilisé pour "S'inscrire", CTA de fiche, bouton de comparaison actif.
 - **Secondary:** fond blanc/verre clair, texte encre secondaire, bordure bleue légère (`rgba(25,118,210,.16)`). Utilisé pour "Voir la fiche", retour, filtres actifs.
 - **Tertiary/Ghost:** fond quasi transparent, texte muted, bordure fine. Utilisé pour les filtres inactifs et actions secondaires en popup.
@@ -174,7 +181,9 @@ Le système est plat par défaut : aucune surface n'utilise `backdrop-filter`. L
 - **Sidebar (liste auto-écoles):** panneau flottant à gauche, 310–330px de large, scroll interne discret (scrollbar 3–4px bleue).
 
 ### Markers de carte (composant signature)
-Cercle bleu en dégradé (`linear-gradient(145deg, #4aa3e5, #0d5fb3)`) avec anneau de pulsation animé (`pulse-ring`), icône voiture blanche au centre. Au clic/hover, agrandissement `scale(1.2)` et intensification de l'ombre bleue. Les clusters reprennent la même famille de bleu avec anneaux concentriques translucides. Ce composant ne doit jamais changer de forme ou de palette — c'est l'ancrage visuel de la marque sur la carte.
+Cercle bleu en dégradé (`linear-gradient(145deg, #4aa3e5, #0d5fb3)`) avec anneau de pulsation animé (`pulse-ring`), icône voiture blanche au centre. Au clic/hover, agrandissement `scale(1.2)` et intensification de l'ombre bleue. Ce composant (marker d'école individuelle) ne doit jamais changer de forme ou de palette — c'est l'ancrage visuel de la marque sur la carte.
+
+**Hubs départementaux :** les 96+ markers de hub (vue d'ensemble, avant qu'un département soit ouvert) suivent la même règle que le marker signature — toujours `#1B4FD8`, sauf le hub actuellement sélectionné (au clic, le temps du drill-in vers son département) qui passe en `#0F172A` (bleu nuit), exactement comme le marker d'école sélectionné. L'ancienne coloration par densité (orange/bleu/vert selon le nombre d'écoles) a été retirée : décision produit du 2026-07-07, un seul marker signature bleu/noir pour toute la carte, hubs comme écoles individuelles.
 
 ## 6. Do's and Don'ts
 
@@ -189,6 +198,6 @@ Cercle bleu en dégradé (`linear-gradient(145deg, #4aa3e5, #0d5fb3)`) avec anne
 - **Don't** utiliser `backdrop-filter` où que ce soit — le glassmorphism a été retiré entièrement du système. L'élévation se lit par l'ombre et l'opacité du fond.
 - **Don't** utiliser une bordure gauche colorée comme accent sur une carte ou un badge — utiliser un fond teinté ou une bordure complète.
 - **Don't** reproduire le style institutionnel des sites d'auto-école traditionnels (bleu-blanc-rouge terne, formulaires austères) ni l'esthétique comparateur low-cost surchargée de pop-ups et bannières publicitaires.
-- **Don't** modifier le style visuel de la carte Google Maps elle-même, ni la clé API Google Maps.
+- **Don't** modifier le style visuel de la carte Google Maps elle-même, ni la clé API Google Maps. **Exception documentée** : `MAP_STYLE` a été remplacé (fond vert pâle, eau bleue, autoroutes jaunes, contraste plus marqué) sur demande explicite malgré cette règle — décision produit assumée, la clé API reste elle intouchable.
 - **Don't** descendre en dessous du poids 600 pour les titres/chiffres/boutons, ni utiliser une taille de texte inférieure à 10px.
 - **Don't** empiler deux box-shadow sur un même élément, sauf sur les popups où c'est déjà la convention établie.

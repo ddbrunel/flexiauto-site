@@ -1,0 +1,747 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FlexiAuto — Connexion</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.7.0/dist/tabler-icons.min.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<style>
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+
+  /* Enregistrement des custom properties comme des couleurs animables
+     (Chrome/Edge/Safari 16.4+ ; sur navigateurs non compatibles, le
+     changement de mode reste instantané au lieu d'être animé — dégradation
+     progressive sans casser la fonctionnalité). */
+  @property --mode-color{syntax:'<color>';inherits:true;initial-value:#1B4FD8}
+  @property --mode-color-deep{syntax:'<color>';inherits:true;initial-value:#1642B0}
+  @property --mode-tint{syntax:'<color>';inherits:true;initial-value:rgba(27,79,216,.08)}
+
+  body{
+    font-family:'Inter',system-ui,-apple-system,sans-serif;color:#17324d;background:#f4fbff;
+    -webkit-font-smoothing:antialiased;line-height:1.5;min-height:100vh;
+    --mode-color:#1B4FD8;--mode-color-deep:#1642B0;--mode-tint:rgba(27,79,216,.08);
+    transition:--mode-color .5s ease,--mode-color-deep .5s ease,--mode-tint .5s ease;
+  }
+  body.mode-auto{--mode-color:#16A34A;--mode-color-deep:#128239;--mode-tint:rgba(22,163,74,.08)}
+  a{color:inherit;text-decoration:none}
+  :root{--bord:#E7ECF7;}
+
+  /* Bandeau + topbar : identiques aux autres pages du site */
+  .promo{background:linear-gradient(180deg,#2158E6,#1B4FD8);color:#fff;display:flex;align-items:center;justify-content:center;gap:10px;padding:7px 16px;font-size:12px;font-weight:500;box-shadow:0 1px 2px rgba(15,23,42,.2);}
+  .promo .btn-essai{background:rgba(255,255,255,.9);color:#1B4FD8;font-weight:600;font-size:11px;padding:3px 12px;border-radius:12px;white-space:nowrap;}
+  .promo .close{width:18px;height:18px;border-radius:50%;background:rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;font-size:10px;line-height:1;cursor:pointer;border:none;color:#fff;flex-shrink:0}
+  #header{padding:0 28px;height:62px;display:flex;align-items:center;gap:18px;background:linear-gradient(180deg,rgba(244,251,255,.96) 0%,rgba(244,251,255,.78) 64%,rgba(244,251,255,0) 100%);}
+  .logo{display:flex;align-items:center;flex-shrink:0;cursor:pointer;text-decoration:none}
+  .logo-img{height:38px;width:auto;display:block}
+  .h-nav{display:flex;align-items:center;gap:10px;margin-left:auto}
+  .h-btn-info{display:flex;align-items:center;gap:4px;height:34px;padding:0 12px;border-radius:8px;font-size:13px;color:#374151;background:transparent;border:none;cursor:pointer;font-family:'Inter',sans-serif;transition:background .15s}
+  .h-btn-info:hover{background:rgba(0,0,0,.05)}
+
+  /* ============================ HERO ============================ */
+  .conn-hero{padding:44px 20px 8px;text-align:center;}
+  .conn-hero h1{font-size:clamp(24px,3.6vw,32px);font-weight:800;letter-spacing:-0.03em;color:#17324d;transition:color .5s ease}
+  .conn-hero p{font-size:14.5px;color:#5f7588;margin-top:10px}
+
+  /* ============================ SÉLECTEUR DE MODE ============================ */
+  .mode-toggle{
+    position:relative;display:flex;background:#EEF3FE;border-radius:100px;padding:5px;
+    width:min(380px,100%);margin:24px auto 0;
+  }
+  .mode-highlight{
+    position:absolute;top:5px;bottom:5px;left:5px;width:calc(50% - 5px);border-radius:100px;
+    background:linear-gradient(135deg,var(--mode-color),var(--mode-color-deep));
+    box-shadow:0 6px 16px -6px var(--mode-color);
+    transition:transform .4s cubic-bezier(.65,0,.35,1),background .5s ease,box-shadow .5s ease;
+    z-index:0;
+  }
+  .mode-toggle.mode-auto .mode-highlight{transform:translateX(100%)}
+  .mode-btn{
+    position:relative;z-index:1;flex:1;text-align:center;padding:11px 6px;border:none;background:transparent;
+    font-family:'Inter',sans-serif;font-size:14px;font-weight:700;color:#5f7588;cursor:pointer;
+    border-radius:100px;transition:color .3s;
+  }
+  .mode-btn.active{color:#fff}
+
+  /* ============================ CARTE AUTH ============================ */
+  main{display:flex;align-items:center;justify-content:center;padding:28px 20px 60px}
+  .auth-card{
+    width:100%;max-width:420px;background:#fff;border-radius:20px;padding:32px 30px;
+    border:2px solid var(--mode-color);
+    box-shadow:0 18px 46px rgba(31,86,125,.16),0 2px 10px rgba(31,86,125,.08);
+    transition:border-color .5s ease;
+  }
+
+  .tabs{display:flex;gap:6px;background:#F1F5FB;border-radius:12px;padding:4px;margin-bottom:22px}
+  .tab{flex:1;text-align:center;padding:9px 6px;border-radius:9px;font-size:13px;font-weight:700;color:#5f7588;cursor:pointer;border:none;background:transparent;font-family:'Inter',sans-serif;transition:all .2s}
+  .tab.active{background:#fff;color:var(--mode-color);box-shadow:0 4px 12px -4px var(--mode-tint)}
+
+  .btn-google{
+    display:flex;align-items:center;justify-content:center;gap:10px;width:100%;
+    height:44px;border-radius:100px;border:1px solid #DADCE0;background:#fff;color:#3c4043;
+    font-family:'Inter',sans-serif;font-size:14px;font-weight:600;cursor:pointer;transition:box-shadow .15s;
+    margin-bottom:20px;
+  }
+  .btn-google:hover{box-shadow:0 2px 8px rgba(0,0,0,.12)}
+  .btn-google svg{width:18px;height:18px}
+
+  .sep{display:flex;align-items:center;gap:12px;margin:16px 0;font-size:12px;color:#94A3B8}
+  .sep::before,.sep::after{content:"";flex:1;height:1px;background:var(--bord)}
+
+  .field{display:flex;flex-direction:column;gap:6px;margin-bottom:14px}
+  .field label{font-size:12.5px;font-weight:700;color:#374151}
+  .field input{height:42px;padding:0 14px;border-radius:10px;border:1px solid rgba(0,0,0,.1);
+    font-family:'Inter',sans-serif;font-size:14px;color:#17324d;background:#fff;width:100%;
+    transition:border-color .2s,box-shadow .2s}
+  .field input:focus{outline:none;border-color:var(--mode-color);box-shadow:0 0 0 4px var(--mode-tint)}
+  .field-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+
+  .forgot{display:block;text-align:right;font-size:12.5px;font-weight:600;color:var(--mode-color);margin:-6px 0 16px;cursor:pointer;background:none;border:none;font-family:'Inter',sans-serif;padding:0;transition:color .5s}
+
+  .btn-submit{
+    width:100%;height:44px;border-radius:100px;border:none;cursor:pointer;
+    background:linear-gradient(135deg,var(--mode-color),var(--mode-color-deep));color:#fff;
+    font-family:'Inter',sans-serif;font-size:14px;font-weight:700;
+    box-shadow:0 10px 24px -8px var(--mode-color);transition:filter .15s,transform .15s,background .5s ease,box-shadow .5s ease;
+    margin-top:4px;
+  }
+  .btn-submit:hover{filter:brightness(1.05);transform:translateY(-1px)}
+  .btn-submit:disabled{opacity:.6;cursor:not-allowed;transform:none;filter:none}
+
+  .btn-outline{
+    width:100%;height:44px;border-radius:100px;cursor:pointer;background:#fff;
+    border:1.5px solid var(--mode-color);color:var(--mode-color);
+    font-family:'Inter',sans-serif;font-size:14px;font-weight:700;transition:all .3s;margin-top:10px;
+  }
+  .btn-outline:hover{background:var(--mode-tint)}
+
+  .auth-msg{margin-top:14px;padding:11px 14px;border-radius:10px;font-size:13px;font-weight:600;display:none;text-align:center}
+  .auth-msg.error{display:block;background:#FEECEC;color:#B91C1C;border:1px solid #F8CACA}
+  .auth-msg.success{display:block;background:#E6F7EC;color:#15803D;border:1px solid #BBEBCB}
+
+  .panel{display:none}
+  .panel.active{display:block}
+
+  .discrete{text-align:center;margin-top:18px;font-size:12.5px;color:#5f7588}
+  .discrete a,.discrete button{color:var(--mode-color);font-weight:700;background:none;border:none;cursor:pointer;font-family:'Inter',sans-serif;font-size:12.5px;padding:0;transition:color .5s}
+
+  /* Écrans d'accompagnement (après inscription) */
+  .stage{text-align:center}
+  .stage .ico{width:60px;height:60px;border-radius:50%;background:var(--mode-tint);color:var(--mode-color);
+    display:flex;align-items:center;justify-content:center;font-size:28px;margin:0 auto 16px;transition:background .5s ease,color .5s ease}
+  .stage h2{font-size:19px;font-weight:800;letter-spacing:-0.01em;color:#17324d}
+  .stage p{font-size:13.5px;color:#5f7588;margin-top:10px;line-height:1.6}
+  .stage-actions{margin-top:22px;display:flex;flex-direction:column;gap:10px}
+
+  /* Onboarding visuel post-inscription élève */
+  .onboard{
+    background:linear-gradient(160deg,#F0F6FF,#F8FAFF);border-radius:12px;
+    padding:26px 20px 22px;text-align:center;
+  }
+  .onboard-badge{
+    display:inline-block;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;
+    color:#185FA5;background:#E6F1FB;padding:5px 12px;border-radius:20px;margin-bottom:14px;
+  }
+  .onboard h2{font-size:22px;font-weight:500;color:#042C53;letter-spacing:-0.01em}
+  .onboard .onboard-sub{font-size:15px;color:#5F5E5A;margin-top:8px}
+  .onboard-grid{
+    display:grid;grid-template-columns:1fr 1fr;gap:12px;max-width:460px;margin:22px auto 0;
+  }
+  .onboard-card{
+    background:#fff;border:0.5px solid #B5D4F4;border-radius:14px;padding:18px 16px;text-align:center;
+  }
+  .onboard-card .oc-ico{
+    width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;
+    font-size:20px;margin:0 auto 10px;
+  }
+  .onboard-card .oc-title{font-size:14.5px;font-weight:500;color:#042C53}
+  .onboard-card .oc-desc{font-size:12.5px;color:#5F5E5A;margin-top:4px;line-height:1.4}
+  .onboard-btn{
+    display:flex;align-items:center;justify-content:center;gap:8px;
+    max-width:460px;width:100%;margin:22px auto 0;background:#1B4FD8;color:#fff;
+    border:none;border-radius:12px;padding:15px;font-size:15px;font-weight:500;cursor:pointer;
+    font-family:'Inter',sans-serif;transition:filter .15s,transform .15s;
+  }
+  .onboard-btn:hover{filter:brightness(1.08);transform:translateY(-1px)}
+
+  .footer{padding:20px 28px;border-top:1px solid #EDF0F6;background:#F8FAFD;text-align:center;font-size:11px;color:#94A3B8;}
+
+  @media (max-width:480px){
+    .field-row{grid-template-columns:1fr}
+    .auth-card{padding:26px 22px}
+  }
+</style>
+</head>
+<body>
+  <div class="promo" id="cdr-conn-banner">
+    <span>🎯 Code de la route — Questions officielles · Moins cher que la concurrence</span>
+    <a href="#" class="btn-essai" onclick="alert('Code de la route — bientôt disponible !');return false;">Essayer gratuit</a>
+    <button class="close" aria-label="Fermer" onclick="this.closest('.promo').style.display='none';localStorage.setItem('cdr-conn-closed','true');">✕</button>
+  </div>
+  <div class="topbar-wrap">
+    <div id="header">
+      <a class="logo" href="index.html">
+        <img src="logo-flexiauto.png" alt="FlexiAuto" class="logo-img">
+      </a>
+      <div style="flex:1"></div>
+      <div class="h-nav">
+        <a class="h-btn-info" href="index.html">← Accueil</a>
+      </div>
+    </div>
+  </div>
+
+  <section class="conn-hero">
+    <h1 id="hero-title">Bienvenue sur FlexiAuto</h1>
+    <p id="hero-sub">Choisis ton espace pour continuer.</p>
+
+    <div class="mode-toggle" id="mode-toggle">
+      <button class="mode-btn active" id="btn-mode-eleve">🎓 Élève</button>
+      <button class="mode-btn" id="btn-mode-auto">🚗 Auto-école</button>
+      <div class="mode-highlight"></div>
+    </div>
+  </section>
+
+  <main>
+    <div class="auth-card">
+
+      <!-- ============ ÉLÈVE : onglets + formulaires ============ -->
+      <div class="panel active" id="group-eleve-form">
+        <div class="tabs">
+          <button class="tab active" id="tab-eleve-login">Se connecter</button>
+          <button class="tab" id="tab-eleve-signup">S'inscrire</button>
+        </div>
+
+        <button class="btn-google" id="btn-google">
+          <svg viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.9 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.1 8 3l5.7-5.7C34.6 6.1 29.6 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.7-.4-3.5z"/><path fill="#FF3D00" d="m6.3 14.7 6.6 4.8C14.6 15.9 18.9 13 24 13c3.1 0 5.8 1.1 8 3l5.7-5.7C34.6 6.1 29.6 4 24 4c-7.5 0-14 4.2-17.3 10.4z"/><path fill="#4CAF50" d="M24 44c5.4 0 10.4-2.1 14.1-5.4l-6.5-5.5C29.5 34.9 26.9 36 24 36c-5.2 0-9.6-3.5-11.2-8.3l-6.6 5.1C9.9 39.6 16.4 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.3-2.3 4.3-4.2 5.7l6.5 5.5C41.4 36 44 30.5 44 24c0-1.3-.1-2.7-.4-3.5z"/></svg>
+          Continuer avec Google
+        </button>
+        <div class="sep">ou</div>
+
+        <div class="panel active" id="panel-eleve-login">
+          <form id="form-eleve-login" novalidate>
+            <div class="field">
+              <label for="el-login-email">Email</label>
+              <input type="email" id="el-login-email" required autocomplete="email">
+            </div>
+            <div class="field">
+              <label for="el-login-password">Mot de passe</label>
+              <input type="password" id="el-login-password" required autocomplete="current-password">
+            </div>
+            <button type="submit" class="btn-submit" id="el-login-submit">Se connecter</button>
+          </form>
+        </div>
+
+        <div class="panel" id="panel-eleve-signup">
+          <form id="form-eleve-signup" novalidate>
+            <div class="field">
+              <label for="el-signup-prenom">Prénom</label>
+              <input type="text" id="el-signup-prenom" required autocomplete="given-name">
+            </div>
+            <div class="field">
+              <label for="el-signup-email">Email</label>
+              <input type="email" id="el-signup-email" required autocomplete="email">
+            </div>
+            <div class="field">
+              <label for="el-signup-password">Mot de passe</label>
+              <input type="password" id="el-signup-password" required autocomplete="new-password" minlength="6">
+            </div>
+            <button type="submit" class="btn-submit" id="el-signup-submit">Créer mon compte</button>
+          </form>
+        </div>
+      </div>
+
+      <!-- ============ ÉLÈVE : onboarding visuel post-inscription ============ -->
+      <div class="panel" id="panel-eleve-welcome">
+        <div class="onboard">
+          <span class="onboard-badge">Ton parcours</span>
+          <h2 id="eleve-welcome-title">Bienvenue !</h2>
+          <p class="onboard-sub">FlexiAuto t'accompagne du code au permis.</p>
+
+          <div class="onboard-grid">
+            <div class="onboard-card">
+              <div class="oc-ico" style="background:#E6F1FB;color:#1B4FD8"><i class="ti ti-map-pin"></i></div>
+              <div class="oc-title">1 · Choisis</div>
+              <div class="oc-desc">Une auto-école près de chez toi</div>
+            </div>
+            <div class="onboard-card">
+              <div class="oc-ico" style="background:#E6F1FB;color:#1B4FD8"><i class="ti ti-book"></i></div>
+              <div class="oc-title">2 · Entraîne-toi</div>
+              <div class="oc-desc">Au code, moins cher qu'ailleurs</div>
+            </div>
+            <div class="onboard-card">
+              <div class="oc-ico" style="background:#E6F1FB;color:#1B4FD8"><i class="ti ti-certificate"></i></div>
+              <div class="oc-title">3 · Passe</div>
+              <div class="oc-desc">Ton code officiel accompagné</div>
+            </div>
+            <div class="onboard-card" style="border-color:#C0DD97">
+              <div class="oc-ico" style="background:#EAF3DE;color:#16A34A"><i class="ti ti-steering-wheel"></i></div>
+              <div class="oc-title" style="color:#173404">4 · Conduis</div>
+              <div class="oc-desc">Inscris-toi quand tu es prêt</div>
+            </div>
+          </div>
+
+          <button class="onboard-btn" id="btn-choose-school">
+            Choisir mon auto-école <i class="ti ti-arrow-right"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- ============ AUTO-ÉCOLE : connexion ============ -->
+      <div class="panel" id="group-auto-login">
+        <div class="tabs">
+          <button class="tab active" id="tab-auto-login">Se connecter</button>
+          <button class="tab" id="tab-auto-signup">S'inscrire</button>
+        </div>
+
+        <div class="panel active" id="panel-auto-login">
+          <form id="form-auto-login" novalidate>
+            <div class="field">
+              <label for="auto-login-email">Email</label>
+              <input type="email" id="auto-login-email" required autocomplete="email">
+            </div>
+            <div class="field">
+              <label for="auto-login-password">Mot de passe</label>
+              <input type="password" id="auto-login-password" required autocomplete="current-password">
+            </div>
+            <button type="button" class="forgot" id="btn-forgot">Mot de passe oublié ?</button>
+            <button type="submit" class="btn-submit" id="auto-login-submit">Se connecter</button>
+          </form>
+        </div>
+
+        <!-- Réinitialisation : envoi du lien -->
+        <div class="panel" id="panel-auto-forgot">
+          <div class="field">
+            <label for="forgot-email">Ton email</label>
+            <input type="email" id="forgot-email" required autocomplete="email">
+          </div>
+          <button type="button" class="btn-submit" id="forgot-submit">Envoyer le lien de réinitialisation</button>
+          <p class="discrete"><button id="back-to-auto-login">← Retour à la connexion</button></p>
+        </div>
+
+        <!-- Réinitialisation : nouveau mot de passe (arrivée depuis le lien email) -->
+        <div class="panel" id="panel-auto-recovery">
+          <div class="field">
+            <label for="recovery-password">Nouveau mot de passe</label>
+            <input type="password" id="recovery-password" required autocomplete="new-password" minlength="6">
+          </div>
+          <button type="button" class="btn-submit" id="recovery-submit">Valider le nouveau mot de passe</button>
+        </div>
+
+        <!-- Formulaire prospect auto-école (onglet S'inscrire) -->
+        <div class="panel" id="panel-auto-signup">
+          <form id="form-auto-signup" novalidate>
+            <div class="field">
+              <label for="auto-signup-nom-ecole">Nom de l'auto-école</label>
+              <input type="text" id="auto-signup-nom-ecole" required>
+            </div>
+            <div class="field">
+              <label for="auto-signup-ville">Ville</label>
+              <input type="text" id="auto-signup-ville" required autocomplete="address-level2">
+            </div>
+            <div class="field-row">
+              <div class="field">
+                <label for="auto-signup-prenom">Prénom du gérant</label>
+                <input type="text" id="auto-signup-prenom" required autocomplete="given-name">
+              </div>
+              <div class="field">
+                <label for="auto-signup-nom">Nom du gérant</label>
+                <input type="text" id="auto-signup-nom" required autocomplete="family-name">
+              </div>
+            </div>
+            <div class="field">
+              <label for="auto-signup-email">Email</label>
+              <input type="email" id="auto-signup-email" required autocomplete="email">
+            </div>
+            <div class="field">
+              <label for="auto-signup-telephone">Téléphone</label>
+              <input type="tel" id="auto-signup-telephone" required autocomplete="tel">
+            </div>
+            <button type="submit" class="btn-submit" id="auto-signup-submit">Envoyer ma demande</button>
+          </form>
+        </div>
+      </div>
+
+      <!-- ============ AUTO-ÉCOLE : écran de choix post-prospect ============ -->
+      <div class="panel" id="panel-auto-choice">
+        <div class="stage">
+          <div class="ico">🚗</div>
+          <h2>Merci !</h2>
+          <p>Ta demande est enregistrée. Un conseiller peut te recontacter à tout moment — en attendant, à toi de choisir :</p>
+          <div class="stage-actions">
+            <button class="btn-submit" id="btn-choice-paiement">Devenir partenaire maintenant</button>
+            <button class="btn-outline" id="btn-choice-decouverte">Découvrir nos offres d'abord</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="auth-msg" id="auth-msg" role="status" aria-live="polite"></div>
+    </div>
+  </main>
+
+  <footer class="footer">
+    © 2026 FlexiAuto ·
+    <a href="#">Politique de confidentialité</a> ·
+    <a href="#">Mentions légales</a> ·
+    <a href="#">CGU</a> ·
+    <a href="#">Cookies</a> ·
+    <a href="#">Contact</a>
+  </footer>
+
+  <script>
+    (function(){
+      if(localStorage.getItem('cdr-conn-closed') === 'true'){
+        var banner = document.getElementById('cdr-conn-banner');
+        if(banner) banner.style.display = 'none';
+      }
+    })();
+
+    var SUPABASE_URL = "https://nlzplxhetonxvcdckmcq.supabase.co";
+    var SUPABASE_ANON_KEY = "sb_publishable_er7mVFa1fYYWLwGFCacZ8Q_JWX_uyCF";
+    var supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    var msg = document.getElementById('auth-msg');
+    var heroTitle = document.getElementById('hero-title');
+    var heroSub = document.getElementById('hero-sub');
+    var modeToggle = document.getElementById('mode-toggle');
+    var btnModeEleve = document.getElementById('btn-mode-eleve');
+    var btnModeAuto = document.getElementById('btn-mode-auto');
+
+    var ALL_PANELS = [
+      'group-eleve-form', 'panel-eleve-welcome',
+      'group-auto-login', 'panel-auto-choice'
+    ];
+    var ELEVE_SUBPANELS = ['panel-eleve-login', 'panel-eleve-signup'];
+    var AUTO_SUBPANELS = ['panel-auto-login', 'panel-auto-forgot', 'panel-auto-recovery', 'panel-auto-signup'];
+
+    var state = { mode: 'eleve', eleveTab: 'login', autoTab: 'login', autoSub: 'login' };
+
+    function clearMsg(){
+      msg.className = 'auth-msg';
+      msg.textContent = '';
+    }
+
+    function showMsg(text, type){
+      msg.className = 'auth-msg ' + type;
+      msg.textContent = text;
+    }
+
+    function frenchError(err){
+      console.error('Erreur Supabase:', err);
+      var m = (err && (err.message || err.error_description || err.msg)) || '';
+      if (!m) { try { m = JSON.stringify(err); } catch (e) { m = String(err); } }
+      var lower = m.toLowerCase();
+      if (lower.indexOf('invalid login credentials') > -1) return "Email ou mot de passe incorrect.";
+      if (lower.indexOf('already registered') > -1) return "Un compte existe déjà avec cet email.";
+      if (lower.indexOf('password should be at least') > -1) return "Le mot de passe doit contenir au moins 6 caractères.";
+      if (lower.indexOf('unable to validate email') > -1 || lower.indexOf('invalid email') > -1) return "Adresse email invalide.";
+      if (lower.indexOf('email not confirmed') > -1) return "Merci de confirmer ton email avant de te connecter (vérifie ta boîte mail).";
+      if (lower.indexOf('rate limit') > -1 || lower.indexOf('too many requests') > -1) return "Trop de tentatives. Merci de patienter quelques minutes avant de réessayer.";
+      if (lower.indexOf('failed to fetch') > -1 || lower.indexOf('network') > -1) return "Impossible de contacter le serveur. Vérifie ta connexion internet.";
+      if (!m || m === '{}') return "Une erreur inattendue est survenue. Détail technique dans la console du navigateur (F12).";
+      return m;
+    }
+
+    function render(){
+      // Panneau de premier niveau selon le mode + étape
+      ALL_PANELS.forEach(function(id){ document.getElementById(id).classList.remove('active'); });
+
+      if (state.mode === 'eleve') {
+        document.getElementById(state.eleveStage === 'welcome' ? 'panel-eleve-welcome' : 'group-eleve-form').classList.add('active');
+      } else {
+        document.getElementById(state.autoStage === 'choice' ? 'panel-auto-choice' : 'group-auto-login').classList.add('active');
+      }
+
+      // Sous-panneaux élève (login / signup)
+      ELEVE_SUBPANELS.forEach(function(id){ document.getElementById(id).classList.remove('active'); });
+      document.getElementById(state.eleveTab === 'login' ? 'panel-eleve-login' : 'panel-eleve-signup').classList.add('active');
+      document.getElementById('tab-eleve-login').classList.toggle('active', state.eleveTab === 'login');
+      document.getElementById('tab-eleve-signup').classList.toggle('active', state.eleveTab === 'signup');
+
+      // Sous-panneaux auto-école
+      AUTO_SUBPANELS.forEach(function(id){ document.getElementById(id).classList.remove('active'); });
+      var autoPanelId = state.autoSub === 'login' ? 'panel-auto-login'
+        : state.autoSub === 'forgot' ? 'panel-auto-forgot'
+        : state.autoSub === 'recovery' ? 'panel-auto-recovery'
+        : 'panel-auto-signup';
+      document.getElementById(autoPanelId).classList.add('active');
+      document.getElementById('tab-auto-login').classList.toggle('active', state.autoTab === 'login');
+      document.getElementById('tab-auto-signup').classList.toggle('active', state.autoTab === 'signup');
+
+      // Mode toggle + hero + carte
+      document.body.classList.toggle('mode-auto', state.mode === 'auto');
+      modeToggle.classList.toggle('mode-auto', state.mode === 'auto');
+      btnModeEleve.classList.toggle('active', state.mode === 'eleve');
+      btnModeAuto.classList.toggle('active', state.mode === 'auto');
+
+      if (state.mode === 'eleve') {
+        heroTitle.textContent = 'Bienvenue sur FlexiAuto';
+        heroSub.textContent = "Compare, entraîne-toi et suis ton inscription.";
+      } else {
+        heroTitle.textContent = 'Espace auto-école partenaire';
+        heroSub.textContent = "Connecte-toi ou fais-nous découvrir ton auto-école.";
+      }
+    }
+
+    btnModeEleve.addEventListener('click', function(){ state.mode = 'eleve'; clearMsg(); render(); });
+    btnModeAuto.addEventListener('click', function(){ state.mode = 'auto'; clearMsg(); render(); });
+
+    document.getElementById('tab-eleve-login').addEventListener('click', function(){ state.eleveTab = 'login'; clearMsg(); render(); });
+    document.getElementById('tab-eleve-signup').addEventListener('click', function(){ state.eleveTab = 'signup'; clearMsg(); render(); });
+    document.getElementById('tab-auto-login').addEventListener('click', function(){ state.autoTab = 'login'; state.autoSub = 'login'; clearMsg(); render(); });
+    document.getElementById('tab-auto-signup').addEventListener('click', function(){ state.autoTab = 'signup'; state.autoSub = 'signup'; clearMsg(); render(); });
+
+    render();
+
+    // ==================== GOOGLE OAUTH (élève) ====================
+    document.getElementById('btn-google').addEventListener('click', function(){
+      supabaseClient.auth.signInWithOAuth({
+        provider: 'google',
+        options: { redirectTo: window.location.origin + '/dashboard-eleve.html' }
+      });
+    });
+
+    // ==================== REDIRECTION PAR RÔLE (partagée élève + auto-école) ====================
+    function redirectByRole(role){
+      if (role === 'admin') { window.location.href = 'dashboard-admin.html'; return; }
+      if (role === 'auto_ecole' || role === 'moniteur') { window.location.href = 'dashboard-auto-ecole.html'; return; }
+      window.location.href = 'dashboard-eleve.html';
+    }
+
+    function fetchRoleAndRedirect(userId, btn, defaultText){
+      supabaseClient.from('profiles').select('role').eq('id', userId).single()
+        .then(function(profileRes){
+          btn.disabled = false; btn.textContent = defaultText;
+
+          if (profileRes.error || !profileRes.data) {
+            console.error('Erreur récupération profil:', profileRes.error);
+            showMsg("Impossible de vérifier ton profil. Merci de réessayer.", 'error');
+            supabaseClient.auth.signOut();
+            return;
+          }
+
+          redirectByRole(profileRes.data.role);
+        });
+    }
+
+    // ==================== ÉLÈVE : CONNEXION ====================
+    document.getElementById('form-eleve-login').addEventListener('submit', function(e){
+      e.preventDefault();
+      var btn = document.getElementById('el-login-submit');
+      btn.disabled = true; btn.textContent = 'Connexion…';
+
+      supabaseClient.auth.signInWithPassword({
+        email: document.getElementById('el-login-email').value.trim(),
+        password: document.getElementById('el-login-password').value
+      }).then(function(res){
+        if (res.error) {
+          btn.disabled = false; btn.textContent = 'Se connecter';
+          showMsg(frenchError(res.error), 'error');
+          return;
+        }
+        fetchRoleAndRedirect(res.data.user.id, btn, 'Se connecter');
+      }).catch(function(err){
+        btn.disabled = false; btn.textContent = 'Se connecter';
+        showMsg(frenchError(err), 'error');
+      });
+    });
+
+    // ==================== ÉLÈVE : INSCRIPTION ====================
+    document.getElementById('form-eleve-signup').addEventListener('submit', function(e){
+      e.preventDefault();
+      var btn = document.getElementById('el-signup-submit');
+      btn.disabled = true; btn.textContent = 'Création…';
+      var prenom = document.getElementById('el-signup-prenom').value.trim();
+
+      supabaseClient.auth.signUp({
+        email: document.getElementById('el-signup-email').value.trim(),
+        password: document.getElementById('el-signup-password').value,
+        options: { data: { role: 'eleve', prenom: prenom } }
+      }).then(function(res){
+        btn.disabled = false; btn.textContent = 'Créer mon compte';
+        if (res.error) { showMsg(frenchError(res.error), 'error'); return; }
+
+        if (res.data.session) {
+          clearMsg();
+          document.getElementById('eleve-welcome-title').textContent = prenom ? 'Bienvenue, ' + prenom + ' !' : 'Bienvenue !';
+          state.eleveStage = 'welcome';
+          render();
+        } else {
+          showMsg("Compte créé ! Vérifie ta boîte mail pour confirmer ton adresse avant de te connecter.", 'success');
+        }
+      }).catch(function(err){
+        btn.disabled = false; btn.textContent = 'Créer mon compte';
+        showMsg(frenchError(err), 'error');
+      });
+    });
+
+    document.getElementById('btn-choose-school').addEventListener('click', function(){
+      // ?go=carte est le paramètre déjà utilisé par index.html (ex: lien
+      // "Trouver mon auto-école" de nos-offres.html) pour ouvrir directement
+      // la carte et déclencher la demande de géolocalisation (showCarte() ->
+      // initGeolocation()) — on réutilise ce mécanisme existant plutôt que
+      // d'en introduire un nouveau redondant.
+      window.location.href = 'index.html?go=carte';
+    });
+
+    // ==================== AUTO-ÉCOLE : CONNEXION ====================
+    document.getElementById('form-auto-login').addEventListener('submit', function(e){
+      e.preventDefault();
+      var btn = document.getElementById('auto-login-submit');
+      btn.disabled = true; btn.textContent = 'Connexion…';
+
+      supabaseClient.auth.signInWithPassword({
+        email: document.getElementById('auto-login-email').value.trim(),
+        password: document.getElementById('auto-login-password').value
+      }).then(function(res){
+        if (res.error) {
+          btn.disabled = false; btn.textContent = 'Se connecter';
+          showMsg(frenchError(res.error), 'error');
+          return;
+        }
+        fetchRoleAndRedirect(res.data.user.id, btn, 'Se connecter');
+      }).catch(function(err){
+        btn.disabled = false; btn.textContent = 'Se connecter';
+        showMsg(frenchError(err), 'error');
+      });
+    });
+
+    // ==================== AUTO-ÉCOLE : MOT DE PASSE OUBLIÉ ====================
+    document.getElementById('btn-forgot').addEventListener('click', function(){
+      document.getElementById('forgot-email').value = document.getElementById('auto-login-email').value;
+      state.autoSub = 'forgot'; clearMsg(); render();
+    });
+    document.getElementById('back-to-auto-login').addEventListener('click', function(){
+      state.autoSub = 'login'; clearMsg(); render();
+    });
+    document.getElementById('forgot-submit').addEventListener('click', function(){
+      var email = document.getElementById('forgot-email').value.trim();
+      if (!email) { showMsg("Merci d'indiquer ton email.", 'error'); return; }
+
+      var btn = document.getElementById('forgot-submit');
+      btn.disabled = true; btn.textContent = 'Envoi…';
+
+      supabaseClient.auth.resetPasswordForEmail(email, {
+        redirectTo: window.location.origin + '/connexion.html'
+      }).then(function(res){
+        btn.disabled = false; btn.textContent = 'Envoyer le lien de réinitialisation';
+        if (res.error) { showMsg(frenchError(res.error), 'error'); return; }
+        showMsg("Email envoyé ! Vérifie ta boîte mail et clique sur le lien pour choisir un nouveau mot de passe.", 'success');
+      }).catch(function(err){
+        btn.disabled = false; btn.textContent = 'Envoyer le lien de réinitialisation';
+        showMsg(frenchError(err), 'error');
+      });
+    });
+
+    // Supabase émet PASSWORD_RECOVERY quand l'utilisateur arrive depuis le
+    // lien reçu par email — on bascule en mode auto-école + panneau dédié.
+    supabaseClient.auth.onAuthStateChange(function(event){
+      if (event === 'PASSWORD_RECOVERY') {
+        state.mode = 'auto'; state.autoSub = 'recovery'; clearMsg(); render();
+      }
+    });
+
+    document.getElementById('recovery-submit').addEventListener('click', function(){
+      var password = document.getElementById('recovery-password').value;
+      if (!password || password.length < 6) {
+        showMsg("Le mot de passe doit contenir au moins 6 caractères.", 'error');
+        return;
+      }
+
+      var btn = document.getElementById('recovery-submit');
+      btn.disabled = true; btn.textContent = 'Validation…';
+
+      supabaseClient.auth.updateUser({ password: password }).then(function(res){
+        btn.disabled = false; btn.textContent = 'Valider le nouveau mot de passe';
+        if (res.error) { showMsg(frenchError(res.error), 'error'); return; }
+        showMsg("Mot de passe mis à jour ! Tu peux maintenant te connecter.", 'success');
+        supabaseClient.auth.signOut().then(function(){
+          setTimeout(function(){ state.autoSub = 'login'; render(); }, 1500);
+        });
+      }).catch(function(err){
+        btn.disabled = false; btn.textContent = 'Valider le nouveau mot de passe';
+        showMsg(frenchError(err), 'error');
+      });
+    });
+
+    // ==================== AUTO-ÉCOLE : PROSPECT (inscription) ====================
+    var lastProspectId = null;
+    var lastProspectPayload = null;
+
+    document.getElementById('form-auto-signup').addEventListener('submit', function(e){
+      e.preventDefault();
+      var btn = document.getElementById('auto-signup-submit');
+      btn.disabled = true; btn.textContent = 'Envoi…';
+
+      var payload = {
+        nom_ecole: document.getElementById('auto-signup-nom-ecole').value.trim(),
+        ville: document.getElementById('auto-signup-ville').value.trim(),
+        gerant_prenom: document.getElementById('auto-signup-prenom').value.trim(),
+        gerant_nom: document.getElementById('auto-signup-nom').value.trim(),
+        email: document.getElementById('auto-signup-email').value.trim(),
+        telephone: document.getElementById('auto-signup-telephone').value.trim()
+      };
+
+      fetch(SUPABASE_URL + '/functions/v1/submit-prospect-auto-ecole', {
+        method: 'POST',
+        headers: {
+          'apikey': SUPABASE_ANON_KEY,
+          'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(payload)
+      }).then(function(res){
+        if (!res.ok) {
+          return res.text().then(function(text){ throw new Error(text || ('Erreur ' + res.status)); });
+        }
+        return res.json();
+      }).then(function(data){
+        btn.disabled = false; btn.textContent = 'Envoyer ma demande';
+        lastProspectId = data.id;
+        lastProspectPayload = payload;
+        clearMsg();
+        state.autoStage = 'choice';
+        render();
+      }).catch(function(err){
+        btn.disabled = false; btn.textContent = 'Envoyer ma demande';
+        showMsg(frenchError(err), 'error');
+      });
+    });
+
+    function recordChoiceAndGo(choix, destination){
+      if (!lastProspectId) { window.location.href = destination; return; }
+      fetch(SUPABASE_URL + '/functions/v1/update-prospect-choice', {
+        method: 'POST',
+        headers: {
+          'apikey': SUPABASE_ANON_KEY,
+          'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ id: lastProspectId, choix: choix })
+      }).catch(function(err){
+        console.error('Erreur enregistrement du choix prospect:', err);
+      }).then(function(){
+        window.location.href = destination;
+      });
+    }
+
+    document.getElementById('btn-choice-paiement').addEventListener('click', function(){
+      // sessionStorage plutôt que des paramètres d'URL : les données (email,
+      // téléphone) ne se retrouvent jamais dans l'historique, les logs ou une
+      // URL copiée/partagée, et disparaissent automatiquement à la fermeture
+      // de l'onglet. inscription-partenaire.html les lit une fois puis les efface.
+      if (lastProspectPayload) {
+        try { sessionStorage.setItem('flexiauto_prospect_data', JSON.stringify(lastProspectPayload)); }
+        catch (e) { console.error('Impossible de préremplir le formulaire partenaire:', e); }
+      }
+      recordChoiceAndGo('paiement', 'inscription-partenaire.html');
+    });
+    document.getElementById('btn-choice-decouverte').addEventListener('click', function(){
+      recordChoiceAndGo('decouverte', 'nos-offres.html');
+    });
+  </script>
+</body>
+</html>
