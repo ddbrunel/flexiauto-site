@@ -10,107 +10,482 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <style>
   *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-  body{font-family:'Inter',system-ui,-apple-system,sans-serif;color:#17324d;background:#f4fbff;
-    -webkit-font-smoothing:antialiased;line-height:1.5;min-height:100vh;}
+  body{font-family:'Inter',system-ui,-apple-system,sans-serif;color:#17324d;background:#F8FAFF;
+    -webkit-font-smoothing:antialiased;line-height:1.5;}
   a{color:inherit;text-decoration:none}
-  :root{--blue:#1976d2;--blue-deep:#0d5fb3;--sage:#6fbf73;--ink:#17324d;--muted-strong:#5f7588;--bord:#E7ECF7;}
+  button{font-family:'Inter',sans-serif}
+  :root{--blue:#1B4FD8;--ink:#17324d;--muted:#5f7588;--bord:#E7ECF7;--sage:#16A34A;--amber:#D97706;}
 
-  .promo{background:linear-gradient(180deg,#2158E6,#1B4FD8);color:#fff;display:flex;align-items:center;justify-content:center;gap:10px;padding:7px 16px;font-size:12px;font-weight:500;box-shadow:0 1px 2px rgba(15,23,42,.2);}
-  .promo .btn-essai{background:rgba(255,255,255,.9);color:#1B4FD8;font-weight:600;font-size:11px;padding:3px 12px;border-radius:12px;white-space:nowrap;}
-  .promo .close{width:18px;height:18px;border-radius:50%;background:rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;font-size:10px;line-height:1;cursor:pointer;border:none;color:#fff;flex-shrink:0}
-  #header{padding:0 28px;height:62px;display:flex;align-items:center;gap:18px;background:linear-gradient(180deg,rgba(244,251,255,.96) 0%,rgba(244,251,255,.78) 64%,rgba(244,251,255,0) 100%);}
-  .logo{display:flex;align-items:center;flex-shrink:0;cursor:pointer;text-decoration:none}
-  .logo-img{height:38px;width:auto;display:block}
+  /* ============================ LAYOUT (identique à dashboard-admin.html) ============================ */
+  .admin-shell{display:flex;min-height:100vh}
 
-  main{display:flex;align-items:center;justify-content:center;padding:60px 20px;min-height:60vh}
-  .dash-card{
-    width:100%;max-width:440px;background:#fff;border-radius:20px;padding:40px 32px;text-align:center;
-    box-shadow:0 18px 46px rgba(31,86,125,.16),0 2px 10px rgba(31,86,125,.08);
+  .admin-sidebar{
+    width:240px;flex-shrink:0;background:#0F172A;color:#fff;display:flex;flex-direction:column;
+    position:fixed;top:0;bottom:0;left:0;z-index:200;transition:transform .25s ease;
+  }
+  .sidebar-logo{padding:20px 20px 16px;display:flex;align-items:center;gap:10px}
+  .sidebar-logo img{height:30px;width:auto}
+  .sidebar-nav{flex:1;padding:8px 12px;display:flex;flex-direction:column;gap:2px}
+  .nav-item{
+    display:flex;align-items:center;gap:10px;text-align:left;padding:11px 14px;border-radius:8px;
+    background:transparent;border:none;color:#CBD5E1;font-size:13.5px;font-weight:500;cursor:pointer;
+    transition:background .15s,color .15s;
+  }
+  .nav-item:hover{background:rgba(255,255,255,.06);color:#fff}
+  .nav-item.active{background:var(--blue);color:#fff}
+  .sidebar-foot{padding:14px 20px 20px;border-top:1px solid rgba(255,255,255,.08)}
+  .sidebar-user{font-size:12px;color:#94A3B8;margin-bottom:10px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .sidebar-logout{
+    width:100%;padding:9px 12px;border-radius:8px;border:1px solid rgba(255,255,255,.14);
+    background:transparent;color:#fff;font-size:13px;font-weight:600;cursor:pointer;transition:background .15s;
+  }
+  .sidebar-logout:hover{background:rgba(255,255,255,.08)}
+
+  .sidebar-backdrop{display:none;position:fixed;inset:0;background:rgba(15,23,42,.5);z-index:190}
+
+  .admin-main{flex:1;min-width:0;margin-left:240px;display:flex;flex-direction:column;min-height:100vh}
+  .admin-topbar{
+    height:62px;padding:0 28px;display:flex;align-items:center;gap:14px;
+    background:#fff;border-bottom:1px solid var(--bord);flex-shrink:0;
+  }
+  .admin-topbar h1{font-size:18px;font-weight:800;letter-spacing:-0.01em;color:var(--ink)}
+  .mobile-menu-btn{display:none;background:none;border:none;font-size:20px;cursor:pointer;color:var(--ink)}
+  .admin-content{padding:28px;flex:1;overflow-x:hidden}
+
+  .admin-section{display:none}
+  .admin-section.active{display:block}
+
+  /* ============================ MÉTRIQUES ============================ */
+  .metrics-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:16px}
+  .metric-card{
+    background:#fff;border-radius:12px;padding:20px;box-shadow:0 4px 14px rgba(15,23,42,.06);
     border:1px solid var(--bord);
   }
-  .dash-card .ico{width:64px;height:64px;border-radius:50%;background:rgba(111,191,115,.12);color:var(--sage);
-    display:flex;align-items:center;justify-content:center;font-size:30px;margin:0 auto 18px}
-  .dash-card h1{font-size:22px;font-weight:800;letter-spacing:-0.02em;color:var(--ink)}
-  .dash-card p{font-size:14px;color:var(--muted-strong);margin-top:12px;line-height:1.6}
-  .btn-logout{
-    margin-top:26px;display:inline-flex;align-items:center;justify-content:center;
-    height:42px;padding:0 24px;border-radius:100px;border:1px solid rgba(25,118,210,.2);
-    background:#fff;color:var(--blue);font-family:'Inter',sans-serif;font-size:13.5px;font-weight:700;
-    cursor:pointer;transition:all .2s;
+  .metric-card .m-label{font-size:12px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.03em}
+  .metric-card .m-value{font-size:24px;font-weight:500;color:var(--ink);margin-top:8px;letter-spacing:-0.01em}
+  .metric-card .m-value.loading{color:#CBD5E1}
+
+  /* ============================ TABLEAUX ============================ */
+  .table-wrap{background:#fff;border-radius:12px;border:1px solid var(--bord);overflow:auto;box-shadow:0 4px 14px rgba(15,23,42,.05)}
+  table.admin-table{width:100%;border-collapse:collapse;font-size:13px;white-space:nowrap}
+  .admin-table th{
+    text-align:left;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;
+    font-weight:700;padding:11px 14px;border-bottom:1px solid var(--bord);background:#FAFBFF;position:sticky;top:0;
   }
-  .btn-logout:hover{background:#EEF3FE;border-color:rgba(25,118,210,.35)}
+  .admin-table td{padding:11px 14px;border-bottom:1px solid #F1F5F9;color:var(--ink)}
+  .admin-table tr:nth-child(even) td{background:#FAFBFF}
+  .admin-table tr:hover td{background:#F0F5FF}
+
+  .table-loading,.table-empty{padding:32px;text-align:center;color:var(--muted);font-size:13.5px}
+
+  .fin-placeholder{
+    margin-top:20px;background:#fff;border:1px dashed var(--bord);border-radius:12px;padding:24px;
+    text-align:center;color:var(--muted);font-size:13.5px;
+  }
+  .alert-banner{
+    background:#FEF3E0;border:1px solid #FBDDA8;color:#8A620F;border-radius:12px;padding:16px 18px;
+    font-size:13.5px;margin-bottom:20px;line-height:1.6;
+  }
+
+  .statut-chip{display:inline-flex;padding:4px 12px;border-radius:100px;font-size:12px;font-weight:700}
+  .statut-chip.active{background:#E6F7EC;color:var(--sage)}
+  .statut-chip.suspended{background:#FEE2E2;color:#DC2626}
+  .statut-chip.unknown{background:#F1F5F9;color:#64748B}
+
+  h2.section-h{font-size:15px;font-weight:800;color:var(--ink);margin:0 0 14px}
+
+  /* ============================ MA FICHE (formulaire) ============================ */
+  .fiche-card{background:#fff;border-radius:12px;border:1px solid var(--bord);padding:24px;box-shadow:0 4px 14px rgba(15,23,42,.05);max-width:720px}
+  .field-row{margin-bottom:16px}
+  .field-row label{display:block;font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.03em;margin-bottom:6px}
+  .field-row input, .field-row textarea{
+    width:100%;padding:10px 12px;border-radius:9px;border:1px solid var(--bord);font-size:13.5px;
+    font-family:'Inter',sans-serif;color:var(--ink);background:#fff;
+  }
+  .field-row input:focus, .field-row textarea:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 3px rgba(27,79,216,.1)}
+  .field-row textarea{resize:vertical;min-height:80px}
+  .field-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+
+  .formule-row{display:grid;grid-template-columns:2fr 1fr 1fr 1fr auto;gap:10px;align-items:center;margin-bottom:10px;padding:12px;background:#FAFBFF;border-radius:9px;border:1px solid var(--bord)}
+  .formule-row input{padding:8px 10px;font-size:13px;border-radius:8px;border:1px solid var(--bord);font-family:'Inter',sans-serif}
+  .btn-remove-formule{background:#FEE2E2;color:#DC2626;border:none;border-radius:8px;width:32px;height:32px;font-size:16px;cursor:pointer;flex-shrink:0}
+  .btn-add-formule{
+    background:transparent;border:1px dashed var(--bord);color:var(--blue);font-weight:700;font-size:13px;
+    padding:10px;border-radius:9px;width:100%;cursor:pointer;margin-bottom:20px;
+  }
+  .btn-save{
+    background:var(--blue);color:#fff;font-weight:700;font-size:13.5px;padding:11px 24px;border:none;
+    border-radius:100px;cursor:pointer;transition:background .15s;
+  }
+  .btn-save:hover{background:#153fb0}
+  .btn-save:disabled{opacity:.6;cursor:default}
+  .save-msg{margin-top:12px;font-size:13px}
+  .save-msg.ok{color:var(--sage)}
+  .save-msg.error{color:#DC2626}
+
+  @media (max-width:900px){
+    .admin-sidebar{transform:translateX(-100%)}
+    .admin-sidebar.open{transform:translateX(0)}
+    .sidebar-backdrop.open{display:block}
+    .admin-main{margin-left:0}
+    .mobile-menu-btn{display:block}
+    .field-grid{grid-template-columns:1fr}
+    .formule-row{grid-template-columns:1fr 1fr;grid-template-areas:"name name" "price hours" "permit popular" "remove remove"}
+  }
 </style>
 </head>
 <body>
-  <div class="promo" id="cdr-dae-banner">
-    <span>🎯 Code de la route — Questions officielles · Moins cher que la concurrence</span>
-    <a href="#" class="btn-essai" onclick="alert('Code de la route — bientôt disponible !');return false;">Essayer gratuit</a>
-    <button class="close" aria-label="Fermer" onclick="this.closest('.promo').style.display='none';localStorage.setItem('cdr-dae-closed','true');">✕</button>
-  </div>
-  <div class="topbar-wrap">
-    <div id="header">
-      <a class="logo" href="index.html">
-        <img src="logo-flexiauto.png" alt="FlexiAuto" class="logo-img">
-      </a>
-    </div>
-  </div>
+  <div class="admin-shell">
+    <div class="sidebar-backdrop" id="sidebar-backdrop"></div>
+    <aside class="admin-sidebar" id="admin-sidebar">
+      <div class="sidebar-logo">
+        <img src="logo-flexiauto.png" alt="FlexiAuto">
+      </div>
+      <nav class="sidebar-nav">
+        <button class="nav-item active" data-section="overview">📊 Vue d'ensemble</button>
+        <button class="nav-item" data-section="prospects">🎯 Mes prospects code</button>
+        <button class="nav-item" data-section="eleves">👥 Mes élèves</button>
+        <button class="nav-item" data-section="affiliation">💰 Revenus d'affiliation</button>
+        <button class="nav-item" data-section="factures">🧾 Mes factures</button>
+        <button class="nav-item" data-section="fiche">🏫 Ma fiche</button>
+      </nav>
+      <div class="sidebar-foot">
+        <div class="sidebar-user" id="sidebar-user"></div>
+        <button class="sidebar-logout" id="btn-logout">Se déconnecter</button>
+      </div>
+    </aside>
 
-  <main>
-    <div class="dash-card" id="dash-card" style="display:none">
-      <div class="ico">🚗</div>
-      <h1>Bienvenue !</h1>
-      <p>Ton tableau de bord arrive bientôt.</p>
-      <button class="btn-logout" id="btn-logout">Se déconnecter</button>
+    <div class="admin-main">
+      <header class="admin-topbar">
+        <button class="mobile-menu-btn" id="mobile-menu-btn">☰</button>
+        <h1 id="section-title">Vue d'ensemble</h1>
+      </header>
+
+      <div class="admin-content">
+
+        <div class="alert-banner" id="rattachement-banner" style="display:none">
+          ⚠️ Votre compte n'est pas encore rattaché à votre fiche auto-école. Notre équipe s'en occupe manuellement — vous serez notifié dès que ce sera fait.
+        </div>
+
+        <!-- ============ VUE D'ENSEMBLE ============ -->
+        <section class="admin-section active" id="section-overview">
+          <div class="metrics-grid">
+            <div class="metric-card"><div class="m-label">Prospects code</div><div class="m-value loading" id="m-prospects">…</div></div>
+            <div class="metric-card"><div class="m-label">Élèves inscrits</div><div class="m-value loading" id="m-eleves">…</div></div>
+            <div class="metric-card"><div class="m-label">Revenus affiliation (mois)</div><div class="m-value loading" id="m-affiliation">…</div></div>
+            <div class="metric-card"><div class="m-label">Statut abonnement</div><div class="m-value loading" id="m-abonnement">…</div></div>
+          </div>
+        </section>
+
+        <!-- ============ PROSPECTS CODE ============ -->
+        <section class="admin-section" id="section-prospects">
+          <div class="table-wrap">
+            <table class="admin-table">
+              <thead><tr><th>Date</th><th>Prénom</th><th>Nom</th><th>Email</th><th>Téléphone</th></tr></thead>
+              <tbody id="tbody-prospects"><tr><td class="table-loading" colspan="5">Chargement…</td></tr></tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- ============ ÉLÈVES ============ -->
+        <section class="admin-section" id="section-eleves">
+          <div class="table-wrap">
+            <table class="admin-table">
+              <thead><tr><th>Date</th><th>Prénom</th><th>Nom</th><th>Email</th><th>Téléphone</th></tr></thead>
+              <tbody id="tbody-eleves"><tr><td class="table-loading" colspan="5">Chargement…</td></tr></tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- ============ REVENUS D'AFFILIATION ============ -->
+        <section class="admin-section" id="section-affiliation">
+          <div class="fin-placeholder">💡 Les commissions d'affiliation sur le code de la route seront disponibles ici dès le lancement de cette fonctionnalité.</div>
+        </section>
+
+        <!-- ============ MES FACTURES ============ -->
+        <section class="admin-section" id="section-factures">
+          <div class="table-wrap">
+            <table class="admin-table">
+              <thead><tr><th>Durée d'engagement</th><th>Début</th><th>Fin d'engagement</th><th>Statut abonnement</th></tr></thead>
+              <tbody id="tbody-factures"><tr><td class="table-loading" colspan="4">Chargement…</td></tr></tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- ============ MA FICHE ============ -->
+        <section class="admin-section" id="section-fiche">
+          <div class="fiche-card" id="fiche-card">
+            <h2 class="section-h">Informations affichées sur la carte</h2>
+            <div class="field-row"><label for="f-description">Description</label><textarea id="f-description"></textarea></div>
+            <div class="field-row"><label for="f-hours">Horaires</label><textarea id="f-hours" placeholder="Ex : Lun-Ven 9h-12h30, 14h-18h30 · Sam 9h-12h"></textarea></div>
+            <div class="field-grid">
+              <div class="field-row"><label for="f-phone">Téléphone</label><input id="f-phone" type="text"></div>
+              <div class="field-row"><label for="f-email">Email</label><input id="f-email" type="email"></div>
+              <div class="field-row"><label for="f-website">Site web</label><input id="f-website" type="text"></div>
+              <div class="field-row"><label for="f-founded_year">Année de création</label><input id="f-founded_year" type="number"></div>
+              <div class="field-row"><label for="f-instructors">Nombre de moniteurs</label><input id="f-instructors" type="number"></div>
+              <div class="field-row"><label for="f-slots">Places disponibles</label><input id="f-slots" type="number"></div>
+            </div>
+
+            <h2 class="section-h" style="margin-top:8px">Tarifs / formules</h2>
+            <div id="formules-list"></div>
+            <button type="button" class="btn-add-formule" id="btn-add-formule">+ Ajouter une formule</button>
+
+            <button type="button" class="btn-save" id="btn-save-fiche">Enregistrer</button>
+            <div class="save-msg" id="save-msg"></div>
+          </div>
+        </section>
+
+      </div>
     </div>
-  </main>
+  </div>
 
   <script>
-    (function(){
-      if(localStorage.getItem('cdr-dae-closed') === 'true'){
-        var banner = document.getElementById('cdr-dae-banner');
-        if(banner) banner.style.display = 'none';
-      }
-    })();
-
     var SUPABASE_URL = "https://nlzplxhetonxvcdckmcq.supabase.co";
     var SUPABASE_ANON_KEY = "sb_publishable_er7mVFa1fYYWLwGFCacZ8Q_JWX_uyCF";
     var supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    // Garde d'accès : session requise + rôle 'auto_ecole' requis, sinon redirection.
+    var accessToken = null;
+    var formuleCounter = 0;
+
+    function fmtDate(iso){
+      if (!iso) return '—';
+      var d = new Date(iso);
+      return d.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    }
+    function fmtEuros(n){
+      return (n || 0).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €';
+    }
+    function escapeHtml(v){
+      return String(v == null ? '' : v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }
+    function subscriptionLabel(statut){
+      if (statut === 'active') return { text: 'Actif', cls: 'active' };
+      if (statut === 'suspended') return { text: 'Suspendu', cls: 'suspended' };
+      return { text: '—', cls: 'unknown' };
+    }
+
+    // ==================== GARDE D'ACCÈS ====================
     supabaseClient.auth.getSession().then(function(sessionRes){
       var session = sessionRes.data.session;
-      if (!session) {
-        window.location.href = 'connexion.html';
-        return;
-      }
+      if (!session) { window.location.href = 'connexion.html'; return; }
 
-      supabaseClient.from('profiles').select('role').eq('id', session.user.id).single()
+      accessToken = session.access_token;
+
+      supabaseClient.from('profiles').select('role, email').eq('id', session.user.id).single()
         .then(function(profileRes){
-          if (profileRes.error || !profileRes.data) {
-            window.location.href = 'connexion.html';
-            return;
-          }
+          if (profileRes.error || !profileRes.data) { window.location.href = 'connexion.html'; return; }
 
-          if (profileRes.data.role === 'admin') {
-            window.location.href = 'dashboard-admin.html';
-            return;
-          }
-          if (profileRes.data.role === 'eleve') {
-            window.location.href = 'dashboard-eleve.html';
-            return;
-          }
-          if (profileRes.data.role !== 'auto_ecole' && profileRes.data.role !== 'moniteur') {
-            window.location.href = 'connexion.html';
-            return;
-          }
+          var role = profileRes.data.role;
+          if (role === 'admin') { window.location.href = 'dashboard-admin.html'; return; }
+          if (role === 'eleve') { window.location.href = 'dashboard-eleve.html'; return; }
+          if (role !== 'auto_ecole' && role !== 'moniteur') { window.location.href = 'connexion.html'; return; }
 
-          document.getElementById('dash-card').style.display = 'block';
+          document.getElementById('sidebar-user').textContent = profileRes.data.email || '';
+          loadOverview();
         });
     });
 
     document.getElementById('btn-logout').addEventListener('click', function(){
       supabaseClient.auth.signOut().then(function(){
         window.location.href = 'index.html';
+      });
+    });
+
+    // ==================== APPEL EDGE FUNCTIONS ====================
+    function callEcoleFunction(name, body){
+      return fetch(SUPABASE_URL + '/functions/v1/' + name, {
+        method: 'POST',
+        headers: {
+          'apikey': SUPABASE_ANON_KEY,
+          'Authorization': 'Bearer ' + accessToken,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(body)
+      }).then(function(res){
+        if (!res.ok) {
+          return res.json().then(function(data){ throw new Error(data.error || ('Erreur ' + res.status)); });
+        }
+        return res.json();
+      });
+    }
+
+    // ==================== NAVIGATION SIDEBAR ====================
+    var sectionTitles = {
+      overview: "Vue d'ensemble",
+      prospects: 'Mes prospects code',
+      eleves: 'Mes élèves',
+      affiliation: "Revenus d'affiliation",
+      factures: 'Mes factures',
+      fiche: 'Ma fiche'
+    };
+    var loadedSections = {};
+
+    document.querySelectorAll('.nav-item').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        var section = btn.dataset.section;
+        document.querySelectorAll('.nav-item').forEach(function(b){ b.classList.toggle('active', b === btn); });
+        document.querySelectorAll('.admin-section').forEach(function(s){ s.classList.remove('active'); });
+        document.getElementById('section-' + section).classList.add('active');
+        document.getElementById('section-title').textContent = sectionTitles[section];
+        document.getElementById('admin-sidebar').classList.remove('open');
+        document.getElementById('sidebar-backdrop').classList.remove('open');
+
+        if (!loadedSections[section]) {
+          loadedSections[section] = true;
+          if (section === 'prospects') loadListe('prospects', 'tbody-prospects');
+          if (section === 'eleves') loadListe('eleves', 'tbody-eleves');
+          if (section === 'factures') loadFactures();
+          if (section === 'fiche') loadFiche();
+        }
+      });
+    });
+
+    document.getElementById('mobile-menu-btn').addEventListener('click', function(){
+      document.getElementById('admin-sidebar').classList.add('open');
+      document.getElementById('sidebar-backdrop').classList.add('open');
+    });
+    document.getElementById('sidebar-backdrop').addEventListener('click', function(){
+      document.getElementById('admin-sidebar').classList.remove('open');
+      this.classList.remove('open');
+    });
+
+    // ==================== VUE D'ENSEMBLE ====================
+    function loadOverview(){
+      callEcoleFunction('ecole-get-data', { resource: 'overview' }).then(function(m){
+        if (m.rattachement_manquant) {
+          document.getElementById('rattachement-banner').style.display = 'block';
+        }
+        document.getElementById('m-prospects').textContent = m.prospects_count;
+        document.getElementById('m-eleves').textContent = m.eleves_count;
+        document.getElementById('m-affiliation').textContent = fmtEuros(m.revenus_affiliation);
+        var st = subscriptionLabel(m.subscription_status);
+        document.getElementById('m-abonnement').textContent = st.text;
+        document.querySelectorAll('.m-value').forEach(function(el){ el.classList.remove('loading'); });
+      }).catch(function(err){
+        console.error('Erreur chargement vue d\'ensemble:', err);
+      });
+    }
+
+    // ==================== PROSPECTS / ÉLÈVES (même rendu, ressource différente) ====================
+    function loadListe(resource, tbodyId){
+      callEcoleFunction('ecole-get-data', { resource: resource }).then(function(rows){
+        var tbody = document.getElementById(tbodyId);
+        if (!rows.length) { tbody.innerHTML = '<tr><td class="table-empty" colspan="5">Aucun résultat.</td></tr>'; return; }
+
+        tbody.innerHTML = rows.map(function(r){
+          return '<tr>'
+            + '<td>' + fmtDate(r.created_at) + '</td>'
+            + '<td>' + escapeHtml(r.prenom) + '</td>'
+            + '<td>' + escapeHtml(r.nom) + '</td>'
+            + '<td>' + escapeHtml(r.email) + '</td>'
+            + '<td>' + escapeHtml(r.telephone || '—') + '</td>'
+            + '</tr>';
+        }).join('');
+      }).catch(function(err){
+        console.error('Erreur chargement ' + resource + ':', err);
+        document.getElementById(tbodyId).innerHTML = '<tr><td class="table-empty" colspan="5">Erreur de chargement.</td></tr>';
+      });
+    }
+
+    // ==================== MES FACTURES ====================
+    function loadFactures(){
+      callEcoleFunction('ecole-get-data', { resource: 'facture' }).then(function(f){
+        var tbody = document.getElementById('tbody-factures');
+        if (!f) { tbody.innerHTML = '<tr><td class="table-empty" colspan="4">Aucun abonnement trouvé.</td></tr>'; return; }
+
+        var st = subscriptionLabel(f.subscription_status);
+        tbody.innerHTML = '<tr>'
+          + '<td>' + escapeHtml(f.duree_engagement || '—') + '</td>'
+          + '<td>' + fmtDate(f.partner_since) + '</td>'
+          + '<td>' + fmtDate(f.engagement_end_date) + '</td>'
+          + '<td><span class="statut-chip ' + st.cls + '">' + st.text + '</span></td>'
+          + '</tr>';
+      }).catch(function(err){
+        console.error('Erreur chargement factures:', err);
+        document.getElementById('tbody-factures').innerHTML = '<tr><td class="table-empty" colspan="4">Erreur de chargement.</td></tr>';
+      });
+    }
+
+    // ==================== MA FICHE ====================
+    function formuleRowHtml(f){
+      formuleCounter++;
+      var id = 'formule-' + formuleCounter;
+      return '<div class="formule-row" id="' + id + '">'
+        + '<input type="text" class="f-name" placeholder="Nom (ex : Forfait B classique)" value="' + escapeHtml(f.name || '') + '">'
+        + '<input type="number" class="f-price" placeholder="Prix €" value="' + (f.price != null ? f.price : '') + '">'
+        + '<input type="number" class="f-hours" placeholder="Heures" value="' + (f.hours != null ? f.hours : '') + '">'
+        + '<input type="text" class="f-permit" placeholder="Permis (ex : B)" value="' + escapeHtml(f.permit_type || '') + '">'
+        + '<button type="button" class="btn-remove-formule" onclick="document.getElementById(\'' + id + '\').remove()">✕</button>'
+        + '</div>';
+    }
+
+    function loadFiche(){
+      callEcoleFunction('ecole-get-data', { resource: 'fiche' }).then(function(f){
+        if (!f) {
+          document.getElementById('fiche-card').innerHTML = '<p style="color:var(--muted);font-size:13.5px">Votre fiche n\'est pas encore rattachée à votre compte.</p>';
+          return;
+        }
+        document.getElementById('f-description').value = f.description || '';
+        document.getElementById('f-hours').value = f.hours || '';
+        document.getElementById('f-phone').value = f.phone || '';
+        document.getElementById('f-email').value = f.email || '';
+        document.getElementById('f-website').value = f.website || '';
+        document.getElementById('f-founded_year').value = f.founded_year || '';
+        document.getElementById('f-instructors').value = f.instructors || '';
+        document.getElementById('f-slots').value = f.slots || '';
+
+        var list = document.getElementById('formules-list');
+        list.innerHTML = (f.formules || []).map(formuleRowHtml).join('');
+      }).catch(function(err){
+        console.error('Erreur chargement fiche:', err);
+        document.getElementById('fiche-card').innerHTML = '<p style="color:#DC2626;font-size:13.5px">Erreur de chargement de la fiche.</p>';
+      });
+    }
+
+    document.getElementById('btn-add-formule').addEventListener('click', function(){
+      document.getElementById('formules-list').insertAdjacentHTML('beforeend', formuleRowHtml({}));
+    });
+
+    document.getElementById('btn-save-fiche').addEventListener('click', function(){
+      var btn = this;
+      var msg = document.getElementById('save-msg');
+      btn.disabled = true;
+      msg.textContent = '';
+      msg.className = 'save-msg';
+
+      var formules = Array.prototype.map.call(document.querySelectorAll('#formules-list .formule-row'), function(row){
+        return {
+          name: row.querySelector('.f-name').value.trim(),
+          price: row.querySelector('.f-price').value ? Number(row.querySelector('.f-price').value) : null,
+          hours: row.querySelector('.f-hours').value ? Number(row.querySelector('.f-hours').value) : null,
+          permit_type: row.querySelector('.f-permit').value.trim(),
+        };
+      }).filter(function(f){ return f.name; });
+
+      var payload = {
+        fiche: {
+          description: document.getElementById('f-description').value.trim(),
+          hours: document.getElementById('f-hours').value.trim(),
+          phone: document.getElementById('f-phone').value.trim(),
+          email: document.getElementById('f-email').value.trim(),
+          website: document.getElementById('f-website').value.trim(),
+          founded_year: document.getElementById('f-founded_year').value ? Number(document.getElementById('f-founded_year').value) : null,
+          instructors: document.getElementById('f-instructors').value ? Number(document.getElementById('f-instructors').value) : null,
+          slots: document.getElementById('f-slots').value ? Number(document.getElementById('f-slots').value) : null,
+        },
+        formules: formules
+      };
+
+      callEcoleFunction('ecole-update-fiche', payload).then(function(){
+        msg.textContent = 'Fiche enregistrée.';
+        msg.classList.add('ok');
+        btn.disabled = false;
+      }).catch(function(err){
+        console.error('Erreur enregistrement fiche:', err);
+        msg.textContent = "Erreur lors de l'enregistrement. Merci de réessayer.";
+        msg.classList.add('error');
+        btn.disabled = false;
       });
     });
   </script>

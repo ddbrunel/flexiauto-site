@@ -85,6 +85,34 @@ Deno.serve(async (req) => {
       return jsonResponse(data);
     }
 
+    if (resource === "rattachements_manuels") {
+      const { data: profiles, error: profilesError } = await supabaseAdmin
+        .from("profiles")
+        .select("id, email, created_at, partner_application_id")
+        .eq("role", "auto_ecole")
+        .eq("statut_rattachement", "a_faire_manuellement")
+        .order("created_at", { ascending: false });
+      if (profilesError) throw profilesError;
+      if (!profiles.length) return jsonResponse([]);
+
+      // pas de FK exploitable en jointure directe côté PostgREST ici (deux
+      // tables sans relation déclarée dans ce sens) : deuxième requête + jointure en mémoire.
+      const applicationIds = profiles.map((p) => p.partner_application_id).filter(Boolean);
+      const { data: applications, error: applicationsError } = await supabaseAdmin
+        .from("partner_applications")
+        .select("id, nom_ecole, ville, siret")
+        .in("id", applicationIds);
+      if (applicationsError) throw applicationsError;
+
+      const applicationById = new Map(applications.map((a) => [a.id, a]));
+      const rows = profiles.map((p) => ({
+        ...p,
+        ...(applicationById.get(p.partner_application_id) || {}),
+      }));
+
+      return jsonResponse(rows);
+    }
+
     return jsonResponse({ error: "Ressource inconnue" }, 400);
   } catch (err) {
     console.error(err);

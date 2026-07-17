@@ -22,6 +22,64 @@ const ENGAGEMENT_MONTHS: Record<string, number> = {
   annuel: 12,
 };
 
+const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
+const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+const SITE_URL = Deno.env.get("SITE_URL") || "https://flexiauto-site.vercel.app";
+
+// Crée le compte auto_ecole du partenaire dès le paiement confirmé (email
+// d'invitation envoyé par Supabase Auth — le gérant définit son mot de passe
+// sur definir-mot-de-passe.html), puis déclenche le rattachement automatique
+// à sa fiche schools via SIRET/Sirene.
+async function provisionAutoEcoleAccount(
+  applicationId: string,
+  application: { email: string; gerant_nom: string | null; gerant_prenom: string | null },
+) {
+  const metadata = {
+    role: "auto_ecole",
+    partner_application_id: applicationId,
+    prenom: application.gerant_prenom,
+    nom: application.gerant_nom,
+  };
+
+  const { data: invited, error: inviteError } = await supabase.auth.admin.inviteUserByEmail(
+    application.email,
+    { data: metadata, redirectTo: `${SITE_URL}/definir-mot-de-passe.html` },
+  );
+
+  let userId = invited?.user?.id;
+
+  if (inviteError) {
+    // Compte déjà existant (webhook rejoué par Stripe, ou gérant déjà
+    // invité) : pas une erreur en soi — on retrouve son id pour quand même
+    // déclencher/rejouer le rattachement plutôt que d'abandonner.
+    const { data: existing } = await supabase
+      .from("profiles")
+      .select("id")
+      .eq("email", application.email)
+      .maybeSingle();
+    userId = existing?.id;
+
+    if (!userId) {
+      console.error("Échec invitation compte auto-école:", inviteError);
+      return;
+    }
+  }
+
+  const res = await fetch(`${SUPABASE_URL}/functions/v1/rattache-auto-ecole`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${SERVICE_ROLE_KEY}`,
+      apikey: SERVICE_ROLE_KEY,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ user_id: userId }),
+  });
+
+  if (!res.ok) {
+    console.error("Échec rattache-auto-ecole:", await res.text());
+  }
+}
+
 Deno.serve(async (req) => {
   const signature = req.headers.get("stripe-signature");
   const body = await req.text();
@@ -55,7 +113,7 @@ Deno.serve(async (req) => {
       const engagementEnd = new Date(partnerSince);
       engagementEnd.setMonth(engagementEnd.getMonth() + months);
 
-      const { error } = await supabase
+      const { data: application, error } = await supabase
         .from("partner_applications")
         .update({
           statut: "converti",
@@ -64,12 +122,16 @@ Deno.serve(async (req) => {
           engagement_end_date: engagementEnd.toISOString(),
           subscription_status: "active",
         })
-        .eq("id", applicationId);
+        .eq("id", applicationId)
+        .select("email, gerant_nom, gerant_prenom")
+        .single();
 
-      if (error) {
+      if (error || !application) {
         console.error("Erreur mise à jour partner_applications:", error);
         // On répond quand même 200 : Stripe réessaie sur non-2xx, et l'erreur
         // est déjà loggée pour investigation manuelle côté Supabase.
+      } else {
+        await provisionAutoEcoleAccount(applicationId, application);
       }
     } else {
       console.error("checkout.session.completed reçu sans application_id en metadata");

@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FlexiAuto — Définir votre mot de passe</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<style>
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Inter',system-ui,-apple-system,sans-serif;color:#17324d;background:#f4fbff;
+    -webkit-font-smoothing:antialiased;line-height:1.5;min-height:100vh;}
+  a{color:inherit;text-decoration:none}
+  :root{--blue:#1976d2;--blue-deep:#0d5fb3;--sage:#6fbf73;--ink:#17324d;--muted-strong:#5f7588;--bord:#E7ECF7;}
+
+  #header{padding:0 28px;height:62px;display:flex;align-items:center;gap:18px;background:linear-gradient(180deg,rgba(244,251,255,.96) 0%,rgba(244,251,255,.78) 64%,rgba(244,251,255,0) 100%);}
+  .logo{display:flex;align-items:center;flex-shrink:0;text-decoration:none}
+  .logo-img{height:38px;width:auto;display:block}
+
+  main{display:flex;align-items:center;justify-content:center;padding:60px 20px;min-height:80vh}
+  .card{
+    width:100%;max-width:420px;background:#fff;border-radius:20px;padding:40px 32px;
+    box-shadow:0 18px 46px rgba(31,86,125,.16),0 2px 10px rgba(31,86,125,.08);
+    border:1px solid var(--bord);
+  }
+  .card .ico{width:56px;height:56px;border-radius:50%;background:rgba(25,118,210,.1);color:var(--blue);
+    display:flex;align-items:center;justify-content:center;font-size:26px;margin:0 auto 18px}
+  .card h1{font-size:20px;font-weight:800;letter-spacing:-0.02em;color:var(--ink);text-align:center}
+  .card p.sub{font-size:13.5px;color:var(--muted-strong);margin-top:10px;line-height:1.6;text-align:center}
+
+  .field{margin-top:20px}
+  .field label{display:block;font-size:12px;font-weight:700;color:var(--muted-strong);margin-bottom:6px}
+  .field input{
+    width:100%;height:44px;padding:0 14px;border-radius:9px;border:1px solid var(--bord);
+    font-size:14px;font-family:'Inter',sans-serif;color:var(--ink);
+  }
+  .field input:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 4px rgba(25,118,210,.1)}
+
+  .btn-submit{
+    margin-top:24px;width:100%;height:46px;border-radius:100px;border:none;
+    background:linear-gradient(135deg,var(--blue),var(--blue-deep));color:#fff;
+    font-family:'Inter',sans-serif;font-size:14px;font-weight:700;cursor:pointer;
+    box-shadow:0 2px 12px rgba(25,118,210,.35);transition:all .2s;
+  }
+  .btn-submit:hover{box-shadow:0 4px 20px rgba(25,118,210,.5);transform:translateY(-1px)}
+  .btn-submit:disabled{opacity:.6;cursor:default;transform:none}
+
+  .msg{margin-top:16px;font-size:13px;text-align:center;line-height:1.6}
+  .msg.error{color:#DC2626}
+  .msg.ok{color:var(--sage)}
+
+  .btn-retour{
+    margin-top:26px;display:inline-flex;align-items:center;justify-content:center;width:100%;
+    height:42px;border-radius:100px;border:1px solid rgba(25,118,210,.2);
+    background:#fff;color:var(--blue);font-size:13.5px;font-weight:700;cursor:pointer;transition:all .2s;
+  }
+  .btn-retour:hover{background:#EEF3FE;border-color:rgba(25,118,210,.35)}
+</style>
+</head>
+<body>
+  <div id="header">
+    <a class="logo" href="index.html">
+      <img src="logo-flexiauto.png" alt="FlexiAuto" class="logo-img">
+    </a>
+  </div>
+
+  <main>
+    <div class="card" id="card-loading">
+      <p class="sub">Vérification du lien…</p>
+    </div>
+
+    <div class="card" id="card-form" style="display:none">
+      <div class="ico">🔒</div>
+      <h1>Définissez votre mot de passe</h1>
+      <p class="sub">Dernière étape avant d'accéder à votre espace auto-école FlexiAuto.</p>
+
+      <form id="password-form">
+        <div class="field">
+          <label for="password">Mot de passe</label>
+          <input id="password" type="password" minlength="8" required autocomplete="new-password">
+        </div>
+        <div class="field">
+          <label for="password-confirm">Confirmer le mot de passe</label>
+          <input id="password-confirm" type="password" minlength="8" required autocomplete="new-password">
+        </div>
+        <button type="submit" class="btn-submit" id="btn-submit">Définir mon mot de passe</button>
+        <div class="msg" id="form-msg"></div>
+      </form>
+    </div>
+
+    <div class="card" id="card-invalid" style="display:none">
+      <div class="ico" style="background:rgba(220,38,38,.1);color:#DC2626">⚠️</div>
+      <h1>Lien invalide ou expiré</h1>
+      <p class="sub">Ce lien d'invitation n'est plus valable. Contactez-nous pour en recevoir un nouveau.</p>
+      <a href="connexion.html" class="btn-retour">Retour à la connexion</a>
+    </div>
+  </main>
+
+  <script>
+    var SUPABASE_URL = "https://nlzplxhetonxvcdckmcq.supabase.co";
+    var SUPABASE_ANON_KEY = "sb_publishable_er7mVFa1fYYWLwGFCacZ8Q_JWX_uyCF";
+    var supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    function showCard(id){
+      ['card-loading', 'card-form', 'card-invalid'].forEach(function(cid){
+        document.getElementById(cid).style.display = (cid === id) ? 'block' : 'none';
+      });
+    }
+
+    // Le lien d'invitation Supabase contient un token dans l'URL (hash ou
+    // ?code=) que supabase-js échange automatiquement contre une session au
+    // chargement de la page (detectSessionInUrl, activé par défaut) — on
+    // attend juste que cette session soit disponible.
+    supabaseClient.auth.getSession().then(function(res){
+      if (res.data.session) { showCard('card-form'); return; }
+
+      // Laisse une seconde chance : l'échange du token peut être asynchrone
+      // juste après le chargement du script.
+      supabaseClient.auth.onAuthStateChange(function(event, session){
+        if (session) showCard('card-form');
+      });
+      setTimeout(function(){
+        supabaseClient.auth.getSession().then(function(res2){
+          if (!res2.data.session) showCard('card-invalid');
+        });
+      }, 1500);
+    });
+
+    document.getElementById('password-form').addEventListener('submit', function(e){
+      e.preventDefault();
+      var msg = document.getElementById('form-msg');
+      var btn = document.getElementById('btn-submit');
+      var password = document.getElementById('password').value;
+      var confirm = document.getElementById('password-confirm').value;
+
+      msg.textContent = '';
+      msg.className = 'msg';
+
+      if (password.length < 8) {
+        msg.textContent = 'Le mot de passe doit contenir au moins 8 caractères.';
+        msg.classList.add('error');
+        return;
+      }
+      if (password !== confirm) {
+        msg.textContent = 'Les deux mots de passe ne correspondent pas.';
+        msg.classList.add('error');
+        return;
+      }
+
+      btn.disabled = true;
+      supabaseClient.auth.updateUser({ password: password }).then(function(res){
+        if (res.error) throw res.error;
+        msg.textContent = 'Mot de passe défini. Redirection…';
+        msg.classList.add('ok');
+        setTimeout(function(){ window.location.href = 'dashboard-auto-ecole.html'; }, 800);
+      }).catch(function(err){
+        console.error('Erreur définition mot de passe:', err);
+        msg.textContent = "Une erreur est survenue. Merci de réessayer.";
+        msg.classList.add('error');
+        btn.disabled = false;
+      });
+    });
+  </script>
+</body>
+</html>

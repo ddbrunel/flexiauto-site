@@ -108,7 +108,13 @@
       "Bash(rm -rf __pycache__/refresh_business_status*.pyc)",
       "Bash(git -C /Users/bruneldante/Documents/flexiauto-site log --oneline -1 -- index-3.html index-5.html)",
       "Bash(git -C /Users/bruneldante/Documents/flexiauto-site ls-files index-3.html index-5.html)",
-      "Bash(python3 -)"
+      "Bash(python3 -)",
+      "Bash(xargs -I{} basename {})",
+      "Bash(deno check *)",
+      "Bash(node -e \"console.log\\(process.version\\)\")",
+      "Bash(npx --yes esbuild supabase/functions/rattache-auto-ecole/index.ts --loader=ts --format=esm --outfile=/dev/null)",
+      "Bash(npx --yes esbuild supabase/functions/rattache-auto-ecole/index.ts --bundle=false --format=esm --outfile=/tmp/_out.js --external:https://esm.sh/@supabase/supabase-js@2)",
+      "Bash(npx --yes esbuild supabase/functions/stripe-webhook/index.ts --format=esm --outfile=/tmp/_out.js)"
     ],
     "additionalDirectories": [
       "/Users/bruneldante/Documents/flexiauto-site",

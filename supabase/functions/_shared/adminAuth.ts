@@ -40,3 +40,20 @@ export async function requireAdmin(req: Request, supabaseAdmin: SupabaseClient) 
 
   return userData.user;
 }
+
+// Autorise soit un appel serveur-à-serveur (stripe-webhook -> rattache-auto-ecole,
+// authentifié avec la clé service_role elle-même, jamais exposée au front),
+// soit un admin authentifié (retry manuel depuis le dashboard). Retourne
+// 'service' | 'admin' | null plutôt qu'un objet utilisateur : l'appelant
+// service n'a pas de profil à renvoyer.
+export async function requireServiceOrAdmin(
+  req: Request,
+  supabaseAdmin: SupabaseClient,
+): Promise<"service" | "admin" | null> {
+  const authHeader = req.headers.get("Authorization") || "";
+  const token = authHeader.replace(/^Bearer\s+/i, "").trim();
+  if (token && token === Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")) return "service";
+
+  const admin = await requireAdmin(req, supabaseAdmin);
+  return admin ? "admin" : null;
+}

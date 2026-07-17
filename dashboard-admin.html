@@ -133,6 +133,7 @@
         <button class="nav-item active" data-section="overview">📊 Vue d'ensemble</button>
         <button class="nav-item" data-section="partners">📋 Candidatures partenaires</button>
         <button class="nav-item" data-section="prospects">🎯 Prospects auto-école</button>
+        <button class="nav-item" data-section="rattachements">🔗 Rattachements à faire</button>
         <button class="nav-item" data-section="finances">💰 Finances</button>
         <button class="nav-item" data-section="rdv">📅 Rendez-vous</button>
       </nav>
@@ -195,6 +196,19 @@
               <tbody id="tbody-prospects"><tr><td class="table-loading" colspan="8">Chargement…</td></tr></tbody>
             </table>
           </div>
+        </section>
+
+        <!-- ============ RATTACHEMENTS À FAIRE ============ -->
+        <section class="admin-section" id="section-rattachements">
+          <div class="table-wrap">
+            <table class="admin-table">
+              <thead>
+                <tr><th>Date compte</th><th>Auto-école</th><th>Ville</th><th>SIRET</th><th>Email</th></tr>
+              </thead>
+              <tbody id="tbody-rattachements"><tr><td class="table-loading" colspan="5">Chargement…</td></tr></tbody>
+            </table>
+          </div>
+          <div class="fin-placeholder">💡 Aucune correspondance fiable trouvée automatiquement (SIRET direct ou Sirene + commune) pour ces comptes — à rattacher à la bonne fiche manuellement en base (profiles.ecole_id).</div>
         </section>
 
         <!-- ============ FINANCES ============ -->
@@ -308,6 +322,7 @@
       overview: "Vue d'ensemble",
       partners: 'Candidatures partenaires',
       prospects: 'Prospects auto-école',
+      rattachements: 'Rattachements à faire',
       finances: 'Finances',
       rdv: 'Rendez-vous'
     };
@@ -327,6 +342,7 @@
           loadedSections[section] = true;
           if (section === 'partners') loadPartners();
           if (section === 'prospects') loadProspects();
+          if (section === 'rattachements') loadRattachements();
           if (section === 'finances') loadFinances();
         }
       });
@@ -441,6 +457,27 @@
       });
       renderProspects(filtered);
     });
+
+    // ==================== RATTACHEMENTS À FAIRE ====================
+    function loadRattachements(){
+      callAdminFunction('admin-get-data', { resource: 'rattachements_manuels' }).then(function(rows){
+        var tbody = document.getElementById('tbody-rattachements');
+        if (!rows.length) { tbody.innerHTML = '<tr><td class="table-empty" colspan="5">Aucun rattachement en attente.</td></tr>'; return; }
+
+        tbody.innerHTML = rows.map(function(r){
+          return '<tr>'
+            + '<td>' + fmtDate(r.created_at) + '</td>'
+            + '<td>' + escapeHtml(r.nom_ecole || '—') + '</td>'
+            + '<td>' + escapeHtml(r.ville || '—') + '</td>'
+            + '<td>' + escapeHtml(r.siret || '—') + '</td>'
+            + '<td>' + escapeHtml(r.email) + '</td>'
+            + '</tr>';
+        }).join('');
+      }).catch(function(err){
+        console.error('Erreur chargement rattachements:', err);
+        document.getElementById('tbody-rattachements').innerHTML = '<tr><td class="table-empty" colspan="5">Erreur de chargement.</td></tr>';
+      });
+    }
 
     // ==================== CHANGEMENT DE STATUT (partagé) ====================
     function wireStatutSelects(container){
